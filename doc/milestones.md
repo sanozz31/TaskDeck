@@ -15,6 +15,8 @@
 
 ## M2 — 可用性增强（进行中）
 
+> **变更说明（重要）**：本里程碑后期已将「本机 Claude Code（Agent SDK）」通路**整体下线，AI 统一走 DeepSeek**（`server` 不再依赖 `@anthropic-ai`，`provider.ts` 唯一实现为 `OpenAiCompatProvider`）。下文涉及「Claude Code 默认 / 多模型切换 / 剔除 SDK 瘦身」的条目均为**当时的历史记录**，现状以本说明为准。
+
 已交付：
 - **优先级**：四档命名 急 / 高 / 中 / 低（`urgent/high/medium/low`）+ 点缀色。
 - **已完成任务浮窗**：全部任务页右下角「已完成」入口；任务划掉当次仍留主列表（可反悔），下次打开归入浮窗；完成满 **7 天物理删除**（`completed_at` + 启动/打开时清理）。
