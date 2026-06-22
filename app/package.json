@@ -1,0 +1,22 @@
+{
+  "name": "taskdeck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "万事 TaskDeck — 个人任务中控台（编排根）",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "dev:tauri": "wait-on http-get://127.0.0.1:8787/health http-get://localhost:5173 && tauri dev",
+    "dev": "concurrently -k -n server,web,tauri -c green,cyan,magenta \"npm:dev:server\" \"npm:dev:web\" \"npm:dev:tauri\"",
+    "dev:browser": "concurrently -k -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "build:web": "npm --prefix frontend run build",
+    "build": "npm run build:web && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.3",
+    "concurrently": "^10.0.3",
+    "puppeteer-core": "^25.1.0",
+    "wait-on": "^9.0.10"
+  }
+}

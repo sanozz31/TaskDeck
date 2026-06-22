@@ -1,0 +1,52 @@
+/* TaskDeck 设计 token —— Apple 视觉基底 + ChatGPT 式对话。
+   配色克制、单一强调色 Action Blue、hairline 分隔、大留白。 */
+:root {
+  /* 画布与表面 */
+  --canvas: #ffffff;
+  --surface: #f5f5f7;          /* 侧栏 / 次级面 */
+  --surface-2: #fafafafc;
+  --surface-hover: #ececef;
+  --bubble-ai: #f5f5f7;        /* AI 消息气泡 */
+  --bubble-user: #0071e3;      /* 用户消息气泡（强调蓝）*/
+
+  /* 文字 */
+  --ink: #1d1d1f;
+  --ink-secondary: #6e6e73;
+  --ink-tertiary: #8e8e93;
+  --on-accent: #ffffff;
+
+  /* 线与强调 */
+  --hairline: #e5e5e7;
+  --hairline-strong: #d2d2d7;
+  --accent: #0071e3;
+  --accent-hover: #0066cc;
+  --accent-soft: #e8f1fd;
+
+  /* 优先级（低饱和点缀）*/
+  --pri-low: #8e8e93;
+  --pri-medium: #0071e3;
+  --pri-high: #f5a623;
+  --pri-urgent: #ff3b30;
+
+  /* 状态 */
+  --ok: #34c759;
+
+  /* 形状 */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+
+  /* 间距尺度 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+}

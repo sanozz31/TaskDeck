@@ -1,0 +1,23 @@
+# 依赖
+node_modules/
+**/node_modules/
+
+# 构建产物
+app/frontend/dist/
+app/src-tauri/target/
+*.tsbuildinfo
+
+# 数据库（本地数据，不入库）
+app/server/data/
+*.db
+*.db-wal
+*.db-shm
+
+# 临时/日志
+/tmp/
+*.log
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
