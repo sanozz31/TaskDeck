@@ -11,6 +11,7 @@ import { Reminders } from "./components/Reminders";
 import { SettingsModal } from "./components/SettingsModal";
 import { Onboarding } from "./components/Onboarding";
 import { useSettings } from "./store/useTasks";
+import { clearChat, useChatMessages } from "./store/chatStore";
 
 const VIEW_TITLE: Record<ViewKey, string> = {
   chat: "对话",
@@ -30,6 +31,7 @@ export default function App() {
 
   // 后端就绪后才拉设置，用于判断是否需要首启引导。
   const { data: settings, isLoading: settingsLoading } = useSettings();
+  const messages = useChatMessages();
 
   if (ready === null) {
     return (
@@ -71,7 +73,20 @@ export default function App() {
       <Sidebar view={view} onChange={setView} onOpenSettings={() => setSettingsOpen(true)} />
       <main className="main">
         <header className="topbar" data-tauri-drag-region>
-          {VIEW_TITLE[view]}
+          <span className="topbar-title" data-tauri-drag-region>{VIEW_TITLE[view]}</span>
+          {view === "chat" && messages.length > 0 && (
+            <button className="topbar-clear" onClick={() => clearChat()}>
+              清空对话
+            </button>
+          )}
+          <button
+            className="topbar-settings"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="设置"
+            title="设置"
+          >
+            ⚙
+          </button>
         </header>
         <section className="content">
           {view === "chat" && <ChatPanel />}

@@ -123,6 +123,17 @@
   letter-spacing: -0.01em;
   flex: none;
 }
+.topbar-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 顶栏设置入口：仅移动端显示，桌面端走侧栏 */
+.topbar-settings {
+  display: none;
+}
 .content {
   flex: 1;
   min-height: 0;
@@ -140,6 +151,7 @@
 
 /* ===== 对话区（ChatGPT 式）===== */
 .chat {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -817,28 +829,122 @@
   font-size: 15px;
 }
 
-/* ===== 窄窗自适应 ===== */
+/* ===== 移动端（手机竖屏）：底部 Tab Bar ===== */
 @media (max-width: 720px) {
+  /* 布局：主区在上，TabBar 贴底 */
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .main {
+    grid-row: 1;
+    min-height: 0;
   }
   .sidebar {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--sp-3);
-    padding: var(--sp-2) var(--sp-3);
-    overflow-x: auto;
+    grid-row: 2;
   }
-  .brand-text,
+
+  /* 顶栏：标题 + 右侧设置齿轮，顶部避让刘海 */
+  .topbar {
+    height: calc(52px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) var(--sp-4) 0;
+  }
+  .topbar-settings {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin-right: calc(-1 * var(--sp-2));
+    border: none;
+    background: transparent;
+    color: var(--ink-secondary);
+    font-size: 19px;
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    transition: background 0.12s, color 0.12s;
+  }
+  .topbar-settings:active {
+    background: var(--surface-hover);
+    color: var(--ink);
+  }
+
+  /* 侧栏 → 底部 Tab Bar */
+  .sidebar {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-right: none;
+    border-top: 1px solid var(--hairline);
+    overflow: visible;
+  }
+  .brand,
   .sidebar-foot {
     display: none;
   }
   .nav {
+    flex: 1;
     flex-direction: row;
+    gap: 0;
   }
+  .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    min-height: var(--tabbar-h);
+    padding: var(--sp-2) var(--sp-1);
+    text-align: center;
+    font-size: 11px;
+    border-radius: 0;
+    color: var(--ink-tertiary);
+  }
+  .nav-item:hover {
+    background: transparent;
+  }
+  .nav-item:active {
+    background: var(--surface-hover);
+  }
+  .nav-item--on {
+    background: transparent;
+    box-shadow: none;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .nav-icon {
+    width: auto;
+    font-size: 20px;
+  }
+
+  /* FAB 抬到 TabBar 之上，避免被底栏遮挡 */
+  .fab {
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--sp-3));
+  }
+
+  /* 输入类控件 ≥16px，防 iOS 聚焦缩放 */
+  .chat-input,
+  .set-control {
+    font-size: 16px;
+  }
+
+  /* 内容区窄屏收一点内边距 */
+  .scroll-pad {
+    padding: var(--sp-4);
+  }
+
+  /* 日历单列 */
   .cal-view {
     grid-template-columns: 1fr;
+  }
+
+  /* 小按钮触摸放大 */
+  .modal-close {
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -1080,4 +1186,93 @@
 }
 .settings-gear {
   font-size: 15px;
+}
+
+/* ===== 对话页顶部 DDL 时间轴 ===== */
+.deadline-timeline {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4); /* 无任务处的固定最小间距 */
+  padding: var(--sp-3) var(--sp-4);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--hairline);
+}
+.dl-col {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dl-time {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  white-space: nowrap;
+  padding-left: 2px;
+}
+.dl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 8px;
+  background: var(--surface);
+  border-radius: 999px;
+}
+.dl-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+}
+.dl-title {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.dl-pill--overdue .dl-title {
+  color: var(--pri-urgent);
+}
+.dl-check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--hairline-strong);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.dl-check:hover {
+  border-color: var(--ok);
+  background: var(--surface-hover);
+}
+/* topbar 内「清空对话」 */
+.topbar-clear {
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 12.5px;
+  padding: 4px 10px;
+  margin-right: var(--sp-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.topbar-clear:hover {
+  background: var(--surface-hover);
+  color: var(--pri-urgent);
+}
+@media (max-width: 720px) {
+  .deadline-timeline {
+    padding: var(--sp-2) var(--sp-3);
+    gap: var(--sp-3);
+  }
+  .dl-title {
+    max-width: 110px;
+    font-size: 12.5px;
+  }
 }
