@@ -17,7 +17,7 @@ SQLite，单表 `tasks`，WAL 模式。文件：`app/server/data/taskdeck.db`（
 | `scheduled_date` | TEXT? | 执行日 `YYYY-MM-DD`，可空 |
 | `status` | TEXT | `todo` / `doing` / `done` / `archived` |
 | `ai_meta` | TEXT? | 原始 structured_output（审计用） |
-| `ai_model` | TEXT? | 实际使用的模型，如 `claude-opus-4-8[1m]` |
+| `ai_model` | TEXT? | 实际使用的模型，如 `deepseek-v4-pro` |
 | `created_at` / `updated_at` | TEXT | ISO 时间戳 |
 
 索引：`due_date`、`scheduled_date`、`status`、`category`。
