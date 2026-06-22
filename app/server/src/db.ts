@@ -54,20 +54,34 @@ function migrate(db: Database.Database): void {
   }
 
   // 标签库（字典表）：用户可增删，AI 打标签时优先复用，新标签自动并入
+  // sort_order：用户在标签页拖拽手动排序后的次序（越小越靠前）
   db.exec(`
     CREATE TABLE IF NOT EXISTS tag_defs (
       name       TEXT PRIMARY KEY,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
     );
   `);
-  // 首次（空库）种入预设标签
+  // 旧库迁移：补 sort_order 列，并按原有 created_at 次序回填初始排序
+  const tagCols = db.prepare(`PRAGMA table_info(tag_defs)`).all() as { name: string }[];
+  if (!tagCols.some((c) => c.name === "sort_order")) {
+    db.exec(`ALTER TABLE tag_defs ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0`);
+    const ordered = db
+      .prepare(`SELECT name FROM tag_defs ORDER BY created_at ASC, name ASC`)
+      .all() as { name: string }[];
+    const upd = db.prepare(`UPDATE tag_defs SET sort_order = ? WHERE name = ?`);
+    db.transaction(() => ordered.forEach((r, i) => upd.run(i, r.name)))();
+  }
+  // 首次（空库）种入预设标签，按列表顺序赋初始 sort_order
   const tagCount = (db.prepare(`SELECT COUNT(*) AS c FROM tag_defs`).get() as { c: number }).c;
   if (tagCount === 0) {
     const now = new Date().toISOString();
     const presets = ["学习", "工作", "生活", "娱乐", "健康", "财务", "家庭", "社交", "旅行"];
-    const stmt = db.prepare(`INSERT OR IGNORE INTO tag_defs (name, created_at) VALUES (?, ?)`);
+    const stmt = db.prepare(
+      `INSERT OR IGNORE INTO tag_defs (name, created_at, sort_order) VALUES (?, ?, ?)`,
+    );
     const seed = db.transaction((names: string[]) => {
-      names.forEach((n) => stmt.run(n, now));
+      names.forEach((n, i) => stmt.run(n, now, i));
     });
     seed(presets);
   }

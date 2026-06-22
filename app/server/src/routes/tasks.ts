@@ -15,6 +15,7 @@ import {
   deleteTagDef,
   ensureTagDefs,
   listTagDefs,
+  reorderTagDefs,
 } from "../repo/tagDefRepo.js";
 import { getSettings, setSettings } from "../repo/settingsRepo.js";
 
@@ -112,6 +113,16 @@ tasksRouter.post("/tag-defs", (req, res) => {
   if (!name) return res.status(400).json({ error: "标签名不能为空" });
   addTagDef(name);
   res.status(201).json({ tagDefs: listTagDefs() });
+});
+
+/** PUT /tag-defs/order —— 拖拽重排标签库次序。 */
+tasksRouter.put("/tag-defs/order", (req, res) => {
+  const names = req.body?.names;
+  if (!Array.isArray(names) || names.some((n) => typeof n !== "string")) {
+    return res.status(400).json({ error: "names 必须为字符串数组" });
+  }
+  reorderTagDefs(names);
+  res.json({ tagDefs: listTagDefs() });
 });
 
 /** DELETE /tag-defs/:name —— 删除标签（不影响已有任务上的标签）。 */

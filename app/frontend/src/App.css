@@ -2,8 +2,11 @@
 .app {
   display: grid;
   grid-template-columns: clamp(200px, 18vw, 248px) 1fr;
+  /* 行高锁死为视窗高度（minmax 的下界 0 让子项可收缩、内部滚动），
+     避免内容变高把整个 .app 撑过视窗导致整页上下滚动 */
+  grid-template-rows: minmax(0, 1fr);
   height: 100svh;
-  min-height: 100vh;
+  overflow: hidden;
 }
 
 /* ===== 侧栏 ===== */
@@ -110,6 +113,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0; /* grid item 默认 min-height:auto，会被内容撑高，须置 0 */
   background: var(--canvas);
 }
 .topbar {
@@ -176,6 +180,10 @@
   background: var(--surface-hover);
   color: var(--pri-urgent);
 }
+/* 对话区即“裁切层”：上边缘就是那条隐藏的线（flex 让它恰好贴在卡片下沿，
+   卡片多高线就在多高）。contain:paint 强制浏览器把绘制裁进对话区边框，
+   线以上的内容【真正不绘制】——而非仅逻辑滚走，杜绝 WKWebView 上滑时透出。
+   卡片收起后上边缘回到顶部，线自然消失。等价于旧灰线分隔的透明版本。 */
 .chat-stream {
   flex: 1;
   min-height: 0;
@@ -1188,21 +1196,97 @@
   font-size: 15px;
 }
 
-/* ===== 对话页顶部 DDL 时间轴 ===== */
-.deadline-timeline {
+/* ===== 对话页顶部 DDL 时间轴标尺 ===== */
+/* 右上角裸三角收放按钮（无圆环背景，绝对定位于 .chat，收起后仍可点） */
+.dl-toggle {
+  position: absolute;
+  top: 12px;
+  right: 17px; /* 较最初左移 5px、下移 2px */
+  z-index: 6;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+/* 三角形：默认正三角朝上（展开态=可收起）；收起态旋转 180° 成倒三角。 */
+.dl-caret {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 7px solid var(--ink-tertiary);
+  transition: transform 0.22s ease, border-bottom-color 0.12s;
+}
+.dl-toggle:hover .dl-caret {
+  border-bottom-color: var(--ink-secondary);
+}
+.dl-toggle--collapsed .dl-caret {
+  transform: rotate(180deg);
+}
+
+.dl-card {
+  position: relative;
+  z-index: 2; /* 独立浮层卡片：盖在滚动内容之上，内容滚到其后即被遮住 */
+  flex: none;
+  margin: var(--sp-3) var(--sp-4) 0;
+  background: var(--surface); /* 不透明，遮住下方滚上来的内容 */
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  max-height: 160px;
+  opacity: 1;
+  transition: max-height 0.24s ease, opacity 0.18s ease, margin 0.24s ease,
+    border-width 0.24s ease;
+}
+/* 收起：高度归零、不占空间，对话框回到原本位置。 */
+.dl-card--collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-width: 0;
+}
+/* 横向滚动的任务流：有任务处按块宽撑开，空白时间段只用最小间距 */
+.dl-track {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  padding-right: 40px; /* 给右上角收放三角让位 */
+  overflow-x: auto;
+}
+/* 跨天/空态的日期刻度（竖虚线 + 标签在顶部） */
+.dl-mark {
   flex: none;
   display: flex;
   align-items: flex-start;
-  gap: var(--sp-4); /* 无任务处的固定最小间距 */
-  padding: var(--sp-3) var(--sp-4);
-  overflow-x: auto;
-  border-bottom: 1px solid var(--hairline);
+  padding-left: var(--sp-3);
+  border-left: 1px dashed var(--hairline-strong);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  white-space: nowrap;
 }
-.dl-col {
+.dl-track > .dl-mark:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+/* 空态：每个日期用固定最小宽度撑出默认间距 */
+.dl-mark--empty {
+  min-width: 72px;
+}
+/* 任务块：上方精确时刻，下方药丸；按内容宽度自然撑开 */
+.dl-task {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 .dl-time {
   font-size: 11px;
@@ -1214,8 +1298,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 5px 8px;
-  background: var(--surface);
+  padding: 4px 8px;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
   border-radius: 999px;
 }
 .dl-dot {
@@ -1267,12 +1352,20 @@
   color: var(--pri-urgent);
 }
 @media (max-width: 720px) {
-  .deadline-timeline {
+  .dl-card {
+    margin: var(--sp-2) var(--sp-3) 0;
+  }
+  .dl-track {
     padding: var(--sp-2) var(--sp-3);
+    padding-right: 38px;
     gap: var(--sp-3);
   }
   .dl-title {
-    max-width: 110px;
+    max-width: 120px;
     font-size: 12.5px;
+  }
+  .dl-toggle {
+    top: 8px;
+    right: 10px;
   }
 }

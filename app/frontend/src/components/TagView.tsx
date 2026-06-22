@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useTags,
   useTagDefs,
@@ -19,14 +19,27 @@ export function TagView() {
   const [draft, setDraft] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
-  // 默认选中标签库里的第一个
-  useEffect(() => {
-    if (!active && defs && defs.length > 0) setActive(defs[0].name);
-  }, [defs, active]);
-
-  const { data: tasks } = useTasksByTag(active);
   const countOf = (name: string) =>
     counts?.find((c) => c.tag === name)?.count ?? 0;
+
+  // 展示顺序：先按任务数量降序，数量相同再按首字母（拼音）升序。
+  const ordered = useMemo(() => {
+    return (defs ?? [])
+      .map((d) => d.name)
+      .sort((a, b) => {
+        const diff = countOf(b) - countOf(a);
+        if (diff !== 0) return diff;
+        return a.localeCompare(b, "zh-Hans-CN");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defs, counts]);
+
+  // 默认选中排序后的第一个
+  useEffect(() => {
+    if (!active && ordered.length > 0) setActive(ordered[0]);
+  }, [ordered, active]);
+
+  const { data: tasks } = useTasksByTag(active);
 
   const submitAdd = () => {
     const name = draft.trim();
@@ -44,21 +57,21 @@ export function TagView() {
     <div className="tag-view">
       <div className="tag-bar">
         <div className="tag-chips">
-        {(defs ?? []).map((d) => (
+        {ordered.map((name) => (
           <span
-            key={d.name}
-            className={`chip-tag${active === d.name ? " chip-tag--on" : ""}`}
-            onClick={() => setActive(d.name)}
+            key={name}
+            className={`chip-tag${active === name ? " chip-tag--on" : ""}`}
+            onClick={() => setActive(name)}
           >
-            #{d.name}
-            <span className="chip-count">{countOf(d.name)}</span>
+            #{name}
+            <span className="chip-count">{countOf(name)}</span>
             <button
               className="chip-del"
               onClick={(e) => {
                 e.stopPropagation();
-                setPendingDelete(d.name);
+                setPendingDelete(name);
               }}
-              aria-label={`删除标签 ${d.name}`}
+              aria-label={`删除标签 ${name}`}
               title="删除标签"
             >
               ×

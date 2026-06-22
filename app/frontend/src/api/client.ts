@@ -89,6 +89,12 @@ export const api = {
       method: "DELETE",
     }).then((r) => r.tagDefs),
 
+  reorderTagDefs: (names: string[]) =>
+    req<{ tagDefs: TagDef[] }>("/tag-defs/order", {
+      method: "PUT",
+      body: JSON.stringify({ names }),
+    }).then((r) => r.tagDefs),
+
   settings: () => req<{ settings: Settings }>("/settings").then((r) => r.settings),
 
   updateSettings: (patch: Record<string, string>) =>

@@ -5,21 +5,34 @@ export interface TagDef {
   created_at: string;
 }
 
-/** 标签库全部标签，按加入时间正序（预设在前，新增在后）。 */
+/** 标签库全部标签，按用户排序(sort_order)正序，其次加入时间。 */
 export function listTagDefs(): TagDef[] {
   return getDb()
-    .prepare(`SELECT name, created_at FROM tag_defs ORDER BY created_at ASC, name ASC`)
+    .prepare(
+      `SELECT name, created_at FROM tag_defs ORDER BY sort_order ASC, created_at ASC, name ASC`,
+    )
     .all() as TagDef[];
 }
 
-/** 新增标签（已存在则忽略），返回是否实际插入。 */
+/** 新增标签（已存在则忽略），返回是否实际插入。新标签排到末尾。 */
 export function addTagDef(name: string): boolean {
   const clean = name.trim();
   if (!clean) return false;
-  const info = getDb()
-    .prepare(`INSERT OR IGNORE INTO tag_defs (name, created_at) VALUES (?, ?)`)
-    .run(clean, new Date().toISOString());
+  const db = getDb();
+  const next =
+    (db.prepare(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM tag_defs`).get() as { m: number })
+      .m + 1;
+  const info = db
+    .prepare(`INSERT OR IGNORE INTO tag_defs (name, created_at, sort_order) VALUES (?, ?, ?)`)
+    .run(clean, new Date().toISOString(), next);
   return info.changes > 0;
+}
+
+/** 按给定名称顺序重排标签库（拖拽排序）；未列出的标签保持在其后。 */
+export function reorderTagDefs(names: string[]): void {
+  const db = getDb();
+  const upd = db.prepare(`UPDATE tag_defs SET sort_order = ? WHERE name = ?`);
+  db.transaction((arr: string[]) => arr.forEach((n, i) => upd.run(i, n)))(names);
 }
 
 /** 删除标签（不影响已打在任务上的标签）。 */

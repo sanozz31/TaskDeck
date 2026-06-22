@@ -44,6 +44,14 @@ export function useDeleteTagDef() {
   });
 }
 
+export function useReorderTagDefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (names: string[]) => api.reorderTagDefs(names),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tagDefs"] }),
+  });
+}
+
 export function useSettings() {
   return useQuery({ queryKey: ["settings"], queryFn: () => api.settings() });
 }
