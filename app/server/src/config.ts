@@ -10,9 +10,6 @@ export const HOST = "127.0.0.1";
 /** 开发期允许的前端来源（Vite 默认 5173）。本地自用，CORS 仅放行 localhost。 */
 export const ALLOWED_ORIGIN = process.env.TASKDECK_ORIGIN ?? "http://localhost:5173";
 
-/** AI provider 选择：默认走 Agent SDK，认证异常时设 TASKDECK_PROVIDER=cli 回退。 */
-export const PROVIDER = (process.env.TASKDECK_PROVIDER ?? "sdk") as "sdk" | "cli";
-
 /** SQLite 文件路径。开发期落 server/data/，M3 改为 Tauri app data 目录。 */
 export const DB_PATH =
   process.env.TASKDECK_DB ?? resolve(__dirname, "..", "data", "taskdeck.db");

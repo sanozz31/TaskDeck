@@ -8,7 +8,7 @@ export interface AiConfig {
 }
 
 const DEFAULTS: Record<string, string> = {
-  ai_provider: "sdk",
+  ai_provider: "deepseek",
   deepseek_api_key: "",
   deepseek_base_url: "https://api.deepseek.com",
   deepseek_model: "deepseek-v4-flash",

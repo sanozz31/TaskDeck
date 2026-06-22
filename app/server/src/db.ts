@@ -80,9 +80,9 @@ function migrate(db: Database.Database): void {
     );
   `);
   const defaults: Record<string, string> = {
-    ai_provider: "sdk",
+    ai_provider: "deepseek",
     deepseek_base_url: "https://api.deepseek.com",
-    deepseek_model: "deepseek-chat",
+    deepseek_model: "deepseek-v4-flash",
     language: "zh",
   };
   const putDefault = db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`);
