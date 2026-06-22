@@ -21,7 +21,7 @@
 - **日历**：左上角年 / 月支持点击微调与直接输入数字切换；圆点按**当天最高优先级**着色；当天任务按具体时间（`due_time`，24h）升序排列。
 - **标签库**：标签升级为字典表 `tag_defs`（预设 学习/工作/生活/娱乐/健康/财务/家庭/社交/旅行）；标签页支持新增 / 删除；AI 打标签优先复用标签库，新标签自动并入。
 - **具体时间维度**：`due_time`（HH:MM，24h），AI 从「下午3点」等解析。
-- **DDL 通知提醒**（App 运行时）：有具体时间提前 30 分钟、纯日期当天 8:00；Web Notification + localStorage 去重；**关闭 App 不提醒**为当前 MVP 限制。
+- **DDL 通知提醒**（App 运行时）：任务**截止前 24 小时、前 6 小时**各弹一次系统通知；超过截止 24h 不再补提醒（防刷屏）；Web Notification + localStorage 去重；**关闭 App 不提醒**为当前 MVP 限制。
 - **对话历史持久化**（localStorage，刷新不丢）。
 - 删除对话页示例气泡；全部任务 / 标签页空态引导 CTA。
 - **设置与多模型接入**：侧栏齿轮进设置弹窗，AI provider 可在「本机 Claude Code（默认，零配置）」与「DeepSeek（OpenAI 兼容，需 API Key）」间切换；语言偏好（本轮仅 UI）。DeepSeek 模型从手填文本框升级为下拉，选项为当前生产版 `deepseek-v4-flash` / `deepseek-v4-pro`（旧别名 `deepseek-chat` / `deepseek-reasoner` 官方 2026/07/24 停用，已下线）；服务端默认模型同步改为 `deepseek-v4-flash`。侧栏底部常显当前接入模型名。
