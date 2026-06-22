@@ -136,6 +136,7 @@ function publicSettings() {
     deepseekModel: s.deepseek_model,
     hasDeepseekKey: !!s.deepseek_api_key,
     language: s.language,
+    setupDone: s.setup_done === "1",
   };
 }
 
@@ -153,6 +154,7 @@ tasksRouter.patch("/settings", (req, res) => {
   if (b.deepseekBaseUrl !== undefined) map.deepseek_base_url = String(b.deepseekBaseUrl);
   if (b.deepseekModel !== undefined) map.deepseek_model = String(b.deepseekModel);
   if (b.language !== undefined) map.language = String(b.language);
+  if (b.setupDone !== undefined) map.setup_done = b.setupDone ? "1" : "0";
   setSettings(map);
   res.json({ settings: publicSettings() });
 });

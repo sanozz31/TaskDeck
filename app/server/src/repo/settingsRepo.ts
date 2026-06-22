@@ -13,6 +13,7 @@ const DEFAULTS: Record<string, string> = {
   deepseek_base_url: "https://api.deepseek.com",
   deepseek_model: "deepseek-v4-flash",
   language: "zh",
+  setup_done: "0", // 首启引导是否完成；"1" 表示用户已显式配置过模型
 };
 
 /** 读取全部设置（带默认值兜底）。 */

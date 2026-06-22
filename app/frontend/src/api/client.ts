@@ -1,10 +1,32 @@
 import type { Task, TagCount, TagDef, Settings } from "../types";
 
-/** 后端基址。开发期固定 loopback；M3 sidecar 阶段可由 Tauri 注入端口。 */
-const BASE = "http://127.0.0.1:8787";
+/**
+ * 解析后端基址。
+ * - 开发 / 浏览器：固定 loopback 8787（与 `npm run dev` 起的 server 对齐）。
+ * - 打包后的 Tauri：后端是动态端口的 sidecar，向 Rust invoke `server_port` 取实际端口。
+ */
+let _basePromise: Promise<string> | null = null;
+
+async function resolveBase(): Promise<string> {
+  if (import.meta.env.PROD && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const port = await invoke<number>("server_port");
+      return `http://127.0.0.1:${port}`;
+    } catch {
+      // 取不到则回退默认端口
+    }
+  }
+  return "http://127.0.0.1:8787";
+}
+
+function getBase(): Promise<string> {
+  return (_basePromise ??= resolveBase());
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const base = await getBase();
+  const res = await fetch(`${base}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });
@@ -20,7 +42,8 @@ export async function waitForHealth(timeoutMs = 15000): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const r = await fetch(`${BASE}/health`);
+      const base = await getBase();
+      const r = await fetch(`${base}/health`);
       if (r.ok) return true;
     } catch {
       // 后端未起，稍后重试

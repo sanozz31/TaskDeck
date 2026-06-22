@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "../store/useTasks";
+import { CLAUDE_PAUSED } from "../lib/env";
 
 /** DeepSeek 当前生产模型（V4 系列，1M 上下文，OpenAI 兼容）。
  *  旧别名 deepseek-chat / deepseek-reasoner 官方将于 2026/07/24 停用，故不再列出。 */
@@ -67,7 +68,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
-              <option value="sdk">本机 Claude Code（默认，零配置）</option>
+              <option value="sdk" disabled={CLAUDE_PAUSED}>
+                {CLAUDE_PAUSED
+                  ? "本机 Claude Code（暂停配置）"
+                  : "本机 Claude Code（默认，零配置）"}
+              </option>
               <option value="deepseek">DeepSeek（OpenAI 兼容，需 API Key）</option>
             </select>
 

@@ -68,7 +68,9 @@ export function ChatPanel() {
                 ) : m.task ? (
                   <div className="bubble bubble--ai">
                     <div className="ai-lead">
-                      {m.degraded ? "AI 暂时不可用，已先登记为待分类：" : "已登记 ✓"}
+                      {m.degraded
+                        ? "AI 暂时不可用，已先记下。若未安装 Claude Code，可在设置切换为 DeepSeek 并填写 API Key："
+                        : "已登记 ✓"}
                     </div>
                     <TaskItem task={m.task} hideArchive />
                   </div>

@@ -37,4 +37,5 @@ export interface Settings {
   deepseekModel: string;
   hasDeepseekKey: boolean;
   language: string; // 'zh' | 'en'
+  setupDone: boolean; // 首启引导是否已完成（用户显式配置过模型）
 }

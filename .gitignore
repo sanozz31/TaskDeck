@@ -4,8 +4,13 @@ node_modules/
 
 # 构建产物
 app/frontend/dist/
+app/server/dist/
 app/src-tauri/target/
 *.tsbuildinfo
+
+# Tauri sidecar 打包暂存（由 scripts/build-sidecar.sh 生成，含 node 运行时与生产依赖）
+app/src-tauri/sidecar-server/
+app/src-tauri/binaries/
 
 # 数据库（本地数据，不入库）
 app/server/data/

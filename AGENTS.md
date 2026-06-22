@@ -32,6 +32,7 @@ TaskDeck（中文名「万事」）是一个**个人任务中控台桌面应用*
 4. **结构化输出靠 json_schema**：分析结构定义在 `ai/schema.ts` 的 `analysisJsonSchema` + `Analysis` 接口。**改 schema 必须三处同步**：`schema.ts` 的 interface、`analysisJsonSchema`、以及 DB 列（`db.ts` 建表 + `taskRepo.ts` 读写）。
 5. **AI 失败要降级不阻塞**：`routes/tasks.ts` 的 `fallbackAnalysis` 在 AI 异常时把任务原样登记为「待分类」，闭环不能因 AI 挂掉而断。保留此降级。
 6. `maxTurns` 不要设为 1：配合 `outputFormat` 时模型需多轮产出/校验 JSON，设 1 会 `error_max_turns`。当前为 5。
+7. **打包发布版只走 DeepSeek，Claude SDK 仅本地开发用**：`scripts/build-sidecar.sh` 在装完生产依赖后 `rm -rf sidecar-server/node_modules/@anthropic-ai`（瘦身 ~219MB），故发布版**不内置** Agent SDK。两条铁律须保持：(a) `getProvider()` 里 `sdkProvider` 必须**动态 `import()`**，绝不能改成顶层静态 import，否则发布版加载即崩；(b) 前端凡涉及 provider 选择的 UI（首启引导 `Onboarding.tsx`、设置 `SettingsModal.tsx`）都用 `lib/env.ts` 的 `CLAUDE_PAUSED`（=`import.meta.env.PROD`）门控——发布版默认 DeepSeek、Claude 选项禁用标「（暂停配置）」。本机 `server/node_modules` 不要动。
 
 ## 四、数据约定
 
@@ -58,3 +59,6 @@ TaskDeck（中文名「万事」）是一个**个人任务中控台桌面应用*
 - **Rust `time` 0.3.50 被 yank**：Tauri 传递依赖会锁到已撤回的坏版本 `time 0.3.50`（`time-macros::timestamp` 编译错误）。解法：`cd app/src-tauri && cargo update -p time --precise 0.3.49`（已固定在 Cargo.lock）。
 - **Tauri 需要 cargo**：跑 `tauri dev/build` 前先 `source ~/.cargo/env`。
 - Agent SDK 首次冷启动慢（~20-30s），属正常；UI 已有「分析中」打字态。
+- **sidecar node 必须与编译 better-sqlite3 的 node 同 major 版本**：`build-sidecar.sh` 下载官方 node 时按本机 `node -v` 锁版本。若改成别的版本，会与 `npm install` 编译出的 better-sqlite3 原生模块 ABI（`NODE_MODULE_VERSION`）不匹配，装好的 app 一启动 `require` 原生模块就崩。换 node 版本务必同步保证两者一致。
+- **删依赖后清断链**：从随包 `node_modules` 删包（如瘦身删 `@anthropic-ai`）后，`.bin/` 里会留悬空软链，Tauri 打包资源会报 `resource path ... doesn't exist`。`build-sidecar.sh` 已用 `find -L -type l` 清理，删别的包时同理。
+- **打包目标只设 dmg**：`tauri.conf.json` `bundle.targets=["dmg"]`，打完 dmg 后 `bundle/macos/` 不留独立 `.app`。

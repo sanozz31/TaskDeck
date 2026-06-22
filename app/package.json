@@ -10,7 +10,8 @@
     "dev": "concurrently -k -n server,web,tauri -c green,cyan,magenta \"npm:dev:server\" \"npm:dev:web\" \"npm:dev:tauri\"",
     "dev:browser": "concurrently -k -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
     "build:web": "npm --prefix frontend run build",
-    "build": "npm run build:web && tauri build"
+    "build:sidecar": "bash scripts/build-sidecar.sh",
+    "build": "npm run build:sidecar && npm run build:web && tauri build"
   },
   "devDependencies": {
     "@tauri-apps/api": "^2.11.1",

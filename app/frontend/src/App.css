@@ -705,6 +705,118 @@
   }
 }
 
+/* ===== 首启引导 ===== */
+.onboard {
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: var(--canvas);
+}
+.onboard-card {
+  width: min(480px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.onboard-head {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.onboard-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: var(--sp-2);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.onboard-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.onboard-sub {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--ink-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.onboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.onboard-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  text-align: left;
+  width: 100%;
+  padding: var(--sp-4);
+  border: 1px solid var(--hairline-strong);
+  background: var(--canvas);
+  border-radius: var(--radius);
+  transition: border-color 0.12s, background 0.12s;
+}
+.onboard-opt:hover {
+  background: var(--surface-hover);
+}
+.onboard-opt.is-on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--canvas));
+}
+.onboard-opt.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.onboard-opt.is-disabled:hover {
+  background: var(--canvas);
+}
+.onboard-opt-dot {
+  flex: none;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline-strong);
+  transition: border-color 0.12s;
+}
+.onboard-opt.is-on .onboard-opt-dot {
+  border-color: var(--accent);
+  background: radial-gradient(circle at center, var(--accent) 0 5px, transparent 6px);
+}
+.onboard-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.onboard-opt-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.onboard-opt-desc {
+  font-size: 12.5px;
+  color: var(--ink-tertiary);
+  line-height: 1.5;
+}
+.onboard-foot {
+  display: flex;
+}
+.onboard-go {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+}
+
 /* ===== 窄窗自适应 ===== */
 @media (max-width: 720px) {
   .app {

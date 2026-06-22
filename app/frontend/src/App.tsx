@@ -9,6 +9,8 @@ import { TagView } from "./components/TagView";
 import { AllTasks } from "./components/AllTasks";
 import { Reminders } from "./components/Reminders";
 import { SettingsModal } from "./components/SettingsModal";
+import { Onboarding } from "./components/Onboarding";
+import { useSettings } from "./store/useTasks";
 
 const VIEW_TITLE: Record<ViewKey, string> = {
   chat: "对话",
@@ -25,6 +27,9 @@ export default function App() {
   useEffect(() => {
     waitForHealth().then(setReady);
   }, []);
+
+  // 后端就绪后才拉设置，用于判断是否需要首启引导。
+  const { data: settings, isLoading: settingsLoading } = useSettings();
 
   if (ready === null) {
     return (
@@ -43,6 +48,21 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // 设置尚未拉到：短暂占位，避免主界面闪一下又被引导覆盖。
+  if (settingsLoading || !settings) {
+    return (
+      <div className="boot">
+        <div className="boot-spin" />
+        <div>正在准备…</div>
+      </div>
+    );
+  }
+
+  // 首次启动（未完成引导）：强制先配置模型。
+  if (!settings.setupDone) {
+    return <Onboarding onDone={() => { /* setupDone 写入后 useSettings 失效自动重渲染 */ }} />;
   }
 
   return (
