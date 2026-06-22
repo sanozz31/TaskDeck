@@ -14,6 +14,14 @@ export const PRIORITY_VAR: Record<Priority, string> = {
   urgent: "var(--pri-urgent)",
 };
 
+/** 优先级排序权重：值越小越靠前（urgent 最高）。 */
+export const PRIORITY_WEIGHT: Record<Priority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
 /** 'YYYY-MM-DD' → '6月26日 周五'，无则返回空串。 */
 export function prettyDate(d: string | null): string {
   if (!d) return "";

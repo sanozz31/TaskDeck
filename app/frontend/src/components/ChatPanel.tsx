@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaskItem } from "./TaskItem";
-import { useChatMessages, submitTask, clearChat } from "../store/chatStore";
+import { useChatMessages, submitTask } from "../store/chatStore";
+import { DeadlineTimeline } from "./DeadlineTimeline";
 
 export function ChatPanel() {
   const [input, setInput] = useState("");
@@ -35,13 +36,7 @@ export function ChatPanel() {
 
   return (
     <div className="chat">
-      {!empty && (
-        <div className="chat-toolbar">
-          <button className="chat-clear" onClick={() => clearChat()}>
-            清空对话
-          </button>
-        </div>
-      )}
+      <DeadlineTimeline />
 
       <div className="chat-stream" ref={scrollRef}>
         {empty ? (
