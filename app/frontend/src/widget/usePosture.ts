@@ -285,14 +285,23 @@ export function usePosture(): Posture {
       if (willDock) {
         edgeRef.current = nextEdge;
         setEdge(nextEdge);
-        setPinned(false);
+        // 球拖出来松手 → 展开卡片(吸附到边缘);卡片拖到边缘 → 收球(原有逻辑)
+        if (isBall) {
+          setPinned(true);
+        } else {
+          setPinned(false);
+        }
         setDocked(true);
         dockedRef.current = true;
       } else {
+        // 球拖出来松手且不在吸附范围 → 展开自由卡片
+        if (isBall) setPinned(true);
         setDocked(false);
         dockedRef.current = false;
       }
-      void apply(); // 落定:吸附则缩球贴边,自由则钳到屏内
+      // 同步 expandedRef,避免 apply() 里因 React 尚未重渲染而用旧的球尺寸
+      expandedRef.current = !willDock || isBall;
+      void apply(); // 落定:吸附则卡片贴边,自由则钳到屏内
       try {
         localStorage.setItem(
           KEY,

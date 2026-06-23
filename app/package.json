@@ -1,6 +1,6 @@
 {
   "name": "taskdeck",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "万事 TaskDeck — 个人任务中控台（编排根）",
   "scripts": {
