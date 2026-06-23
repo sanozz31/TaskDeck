@@ -49,7 +49,7 @@ npm run dev:browser   # 然后浏览器打开 http://localhost:5173
 
 ## 当前进度
 
-**v1.0.2 — 代码审查收敛版**，端到端闭环完整。以下按能力域概览，详细功能与版本演进见 `CHANGELOG.md` 和 `doc/milestones.md`。
+**v1.0.3 — 悬浮球拖拽体验优化**，端到端闭环完整。以下按能力域概览，详细功能与版本演进见 `CHANGELOG.md` 和 `doc/milestones.md`。
 
 ### 一句话建任务
 
