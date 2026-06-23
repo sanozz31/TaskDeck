@@ -21,6 +21,16 @@ pub fn run() {
         .manage(ServerPort(Mutex::new(None)))
         .manage(Sidecar(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![server_port])
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    // 拦截关闭按钮：阻止销毁窗口，改为隐藏
+                    // 这样悬浮窗的放大按钮和 macOS 图标点击都能重新显示窗口
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -66,11 +76,21 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app_handle, event| {
-            // 应用退出时结束 sidecar，避免残留 node 进程
-            if let RunEvent::Exit = event {
-                if let Some(child) = app_handle.state::<Sidecar>().0.lock().unwrap().take() {
-                    let _ = child.kill();
+            match event {
+                // 应用退出时结束 sidecar，避免残留 node 进程
+                RunEvent::Exit => {
+                    if let Some(child) = app_handle.state::<Sidecar>().0.lock().unwrap().take() {
+                        let _ = child.kill();
+                    }
                 }
+                // macOS Dock/Launchpad 点击图标时恢复主窗口
+                RunEvent::Reopen { .. } => {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+                _ => {}
             }
         });
 }

@@ -31,7 +31,7 @@ const TASK_ITEM_SCHEMA = {
     priority: {
       type: "string",
       enum: PRIORITIES as unknown as string[],
-      description: "根据紧急度与重要度判断；含'尽快/今天/截止'等倾向 high/urgent",
+      description: "距截止≤24h→urgent、≤48h→high、≤72h→medium（此为底线）；语义重要度可在此基础上上调；无日期则全按语义",
     },
     due_date: {
       type: ["string", "null"],
@@ -77,7 +77,8 @@ export function buildAnalysisPrompt(input: string, now: string, knownTags: strin
   return [
     `现在是 ${now}（含日期与时刻，星期参照真实日历）。`,
     `请把下面这句任务描述解析为结构化任务：归纳简短标题、1-4个中文标签、`,
-    `判断优先级，并按语义推断建议截止日(due_date)与执行日(scheduled_date)，`,
+    `判断优先级：先按「距截止≤24h→急、≤48h→高、≤72h→中」定底线，再结合语义重要度上调（如"非常重要""关键"等）；无日期则全按语义。`,
+    `并按语义推断建议截止日(due_date)与执行日(scheduled_date)，`,
     `能推断相对日期就换算成具体 YYYY-MM-DD，无法推断则填 null。`,
     `时间维度（due_time，HH:MM 24小时制）务必处理两类相对说法：`,
     `①明确时刻"下午3点"→15:00；②相对偏移"十分钟后/半小时后/2小时后"——以上面给出的当前时刻为基准换算出绝对时刻，`,

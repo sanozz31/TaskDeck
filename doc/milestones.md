@@ -173,3 +173,10 @@ M4 规划（需求外，待排期）：
 - **通知常驻**：关闭 App 也能提醒（托盘 / 后台常驻进程，开机自启）——补齐当前「仅 App 运行时生效」的 MVP 限制
 - 提醒联动 Mochi 表情
 - 对话式追问改单（「把这个改到下周」）
+
+## v1.0.1 — 窗口关闭修复 · AI 优先级对齐 ✅ 2026-06-23
+
+两个修复/改进：
+
+- **窗口关闭改为隐藏**（`lib.rs`）：点击 X 不再销毁主窗口，改为隐藏。`on_window_event` 拦截 `CloseRequested`、`api.prevent_close()` + `window.hide()`；`RunEvent::Reopen` 处理 Dock/Launchpad 点击恢复。解决了关闭后 Dock、Launchpad、悬浮窗放大按钮均无法恢复窗口的问题。
+- **AI 优先级与自动升级对齐**（`schema.ts`）：AI prompt 与 JSON Schema 注入相同时间阈值（≤24h→急、≤48h→高、≤72h→中），作为**底线**；语义重要度在此基础上上调。消除 AI 初次分配与 5 分钟后自动升级之间的不一致。
