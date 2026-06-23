@@ -10,6 +10,8 @@ import type { Priority, Task } from "../types";
 const pad = (n: number) => String(n).padStart(2, "0");
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+
 const PRI_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
 const RANK_NAME = ["low", "medium", "high", "urgent"] as const;
 
@@ -53,6 +55,14 @@ export function CalendarView() {
     return { allDays: all, byPri: buckets };
   }, [tasks]);
 
+  // 年份下拉范围：今年 ±10 年（若已切到范围外，动态包含当前年份，避免下拉值落空）
+  const thisYear = new Date().getFullYear();
+  const curYear = month.getFullYear();
+  const yearLo = Math.min(thisYear - 10, curYear);
+  const yearHi = Math.max(thisYear + 10, curYear);
+  const yearOptions: number[] = [];
+  for (let y = yearLo; y <= yearHi; y++) yearOptions.push(y);
+
   const selKey = ymd(selected);
   // 当天任务按具体时间(due_time, 24h)升序；无时间的排在最后
   const dayTasks: Task[] = (tasks ?? [])
@@ -75,23 +85,31 @@ export function CalendarView() {
       <div className="cal-pane">
         <div className="cal-head">
           <div className="cal-head-mid">
-            <input
-              type="number"
-              className="cal-num cal-num--year"
+            <select
+              className="cal-sel cal-sel--year"
               value={month.getFullYear()}
               onChange={(e) => setYear(parseInt(e.target.value, 10))}
               aria-label="年"
-            />
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
             <span className="cal-num-unit">年</span>
-            <input
-              type="number"
-              className="cal-num"
-              min={1}
-              max={12}
+            <select
+              className="cal-sel"
               value={month.getMonth() + 1}
               onChange={(e) => setMon(parseInt(e.target.value, 10))}
               aria-label="月"
-            />
+            >
+              {MONTHS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
             <span className="cal-num-unit">月</span>
           </div>
           <div className="cal-nav-group">

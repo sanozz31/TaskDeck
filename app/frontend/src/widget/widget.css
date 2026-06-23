@@ -158,6 +158,8 @@ body,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .wg-row-pri {
   flex: 0 0 auto;
@@ -176,6 +178,11 @@ body,
 }
 .wg-row-due--soon {
   color: var(--pri-high);
+}
+/* 迫近(DDL 前 2 小时):标题转红 */
+.wg-row-title--imminent {
+  color: var(--pri-urgent);
+  font-weight: 700;
 }
 
 /* ---- 占位 ---- */
@@ -206,6 +213,19 @@ body,
   display: block;
   filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.28));
   transition: transform 0.16s;
+  /* 静止态 = 告警态同款白光晕脉动，但【无透明度变化】；持续 filter 动画顺带修透明窗黑底。 */
+  animation: wg-ball-glow-still 1.2s ease-in-out infinite;
+}
+@keyframes wg-ball-glow-still {
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 0 2px rgba(255, 255, 255, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 0 10px rgba(255, 255, 255, 1));
+  }
 }
 .wg-ball:hover {
   transform: scale(1.05);
@@ -216,6 +236,52 @@ body,
   object-fit: cover;
   display: block;
   pointer-events: none;
+  /* 统一球大小：静止/告警两态同一基线 scale(0.95)。
+     静止态也浮动，但幅度是告警态的一半（±0.9px vs ±1.8px）。 */
+  transform: scale(0.95);
+  animation: wg-ball-float-still 1.6s ease-in-out infinite;
+}
+@keyframes wg-ball-float-still {
+  0%,
+  100% {
+    transform: scale(0.95) translateY(0.9px);
+  }
+  50% {
+    transform: scale(0.95) translateY(-0.9px);
+  }
+}
+
+/* ---- 告警态:有任务进入 DDL 前 2 小时 → 红光呼吸 + 上下浮动 ----
+   球缩到 ~88% 留出呼吸边,使红晕与浮动都落在 64px 窗口内、不被裁切。 */
+/* 告警(有迫近任务):第一次的原样——容器 filter glow 动画（淡红光晕）+ img 上下浮动。
+   容器层的持续 filter 动画是把浮动态黑底刷掉的关键。 */
+.wg-ball--alert {
+  animation: wg-ball-glow 1.2s ease-in-out infinite;
+}
+.wg-ball--alert img {
+  animation: wg-ball-float 1.6s ease-in-out infinite;
+}
+@keyframes wg-ball-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 0 2px rgba(255, 255, 255, 0.55));
+    opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 0 10px rgba(255, 255, 255, 1));
+    opacity: 0.5;
+  }
+}
+@keyframes wg-ball-float {
+  0%,
+  100% {
+    transform: scale(0.95) translateY(1.8px);
+  }
+  50% {
+    transform: scale(0.95) translateY(-1.8px);
+  }
 }
 
 /* ---- 头部动作区 ---- */

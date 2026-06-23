@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, waitForHealth } from "../api/client";
+import { isImminent } from "../lib/deadline";
+import { useNow } from "../lib/useNow";
 import { usePosture } from "./usePosture";
 import { AgendaView, AllView } from "./WidgetCard";
 
@@ -23,11 +25,15 @@ export function Widget() {
     enabled: ready === true,
   });
 
+  // 有任务进入「迫近」(DDL 前 2h) → 悬浮球告警(红光呼吸 + 浮动)。
+  const now = useNow();
+  const hasImminent = tasks.some((t) => isImminent(t, now));
+
   // 收起态:圆形悬浮球。点击展开;拖动换位(手动 setPosition,松手 pointerup 判定)。
   if (!posture.expanded) {
     return (
       <button
-        className={`wg-ball wg-ball--${posture.edge}`}
+        className={`wg-ball wg-ball--${posture.edge}${hasImminent ? " wg-ball--alert" : ""}`}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
           try {

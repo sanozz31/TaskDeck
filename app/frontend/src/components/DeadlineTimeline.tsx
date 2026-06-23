@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useAllTasks, useUpdateTask } from "../store/useTasks";
-import { pickTimelineTasks, dayStr, dueAtMs } from "../lib/deadline";
+import { pickTimelineTasks, dayStr, dueAtMs, isImminent } from "../lib/deadline";
+import { useNow } from "../lib/useNow";
 import { dueTone, PRIORITY_VAR, PRIORITY_LABEL } from "../lib/format";
 
 /** 固定展示的三天刻度（空态与跨天分隔都用它）。 */
@@ -23,6 +24,7 @@ const SPAN_DAYS = DAYS.length;
 export function DeadlineTimeline() {
   const { data } = useAllTasks();
   const update = useUpdateTask();
+  const now = useNow();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const tasks = pickTimelineTasks(data ?? [], SPAN_DAYS);
@@ -86,7 +88,9 @@ export function DeadlineTimeline() {
               style={{ background: PRIORITY_VAR[t.priority] }}
               title={`优先级 ${PRIORITY_LABEL[t.priority]}`}
             />
-            <span className="dl-title">{t.title}</span>
+            <span className={`dl-title${isImminent(t, now) ? " dl-title--imminent" : ""}`}>
+              {t.title}
+            </span>
             <button
               className="dl-check"
               onClick={() => update.mutate({ id: t.id, patch: { status: "done" } })}

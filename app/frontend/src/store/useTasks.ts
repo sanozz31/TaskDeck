@@ -13,7 +13,12 @@ function useInvalidateAll() {
 }
 
 export function useAllTasks() {
-  return useQuery({ queryKey: ["tasks", "all"], queryFn: () => api.listTasks() });
+  // 60s 轮询：让后端「优先级随 DDL 自动升级」的改动及时反映到各视图。
+  return useQuery({
+    queryKey: ["tasks", "all"],
+    queryFn: () => api.listTasks(),
+    refetchInterval: 60_000,
+  });
 }
 
 export function useCompletedTasks() {
@@ -69,6 +74,7 @@ export function useTasksByTag(tag: string | null) {
     queryKey: ["tasks", "tag", tag],
     queryFn: () => api.byTag(tag!),
     enabled: !!tag,
+    refetchInterval: 60_000,
   });
 }
 
@@ -76,6 +82,7 @@ export function useCalendar(from: string, to: string) {
   return useQuery({
     queryKey: ["calendar", from, to],
     queryFn: () => api.calendar(from, to),
+    refetchInterval: 60_000,
   });
 }
 

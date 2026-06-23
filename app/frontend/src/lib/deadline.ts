@@ -16,19 +16,39 @@ export function dayStr(offset: number): string {
   return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
 }
 
-/** 任务截止时刻（ms）；无 due_time 视为当天 23:59；无 due_date 返回 Infinity。 */
+/**
+ * 任务截止时刻（ms）；无 due_time 或 due_time 畸形视为当天 23:59；无 due_date 返回 Infinity。
+ * @see app/server/src/repo/taskRepo.ts 的 dueAtMs —— 两端必须保持一致。
+ */
 export function dueAtMs(t: Task): number {
   if (!t.due_date) return Infinity;
   const [y, m, d] = t.due_date.split("-").map(Number);
   if (t.due_time) {
     const [hh, mm] = t.due_time.split(":").map(Number);
-    return new Date(y, m - 1, d, hh, mm).getTime();
+    // due_time 畸形（NaN）时回退当天 23:59，避免 NaN 让迫近判定/升级静默失效
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return new Date(y, m - 1, d, hh, mm).getTime();
+    }
   }
   return new Date(y, m - 1, d, 23, 59).getTime();
 }
 
 function isOpen(t: Task): boolean {
   return t.status !== "done" && t.status !== "archived";
+}
+
+/** 「迫近」窗口：截止前 2 小时。 */
+export const IMMINENT_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * 任务是否「迫近」：未完成、有截止日期，且距截止还剩 ≤ 2 小时（含已过期）。
+ * - 用 `dueAtMs`（无 due_time 视当天 23:59），故全天任务在当天最后 2 小时（21:59 起）算迫近。
+ * - **已过截止时刻仍算迫近**（持续标红，直到任务完成），不只是「最后 2h」窗口。
+ * - 这是实时派生的时间紧迫度，与静态的 priority 字段互不影响。
+ */
+export function isImminent(t: Task, now: number): boolean {
+  if (!isOpen(t) || !t.due_date) return false;
+  return dueAtMs(t) - now <= IMMINENT_MS;
 }
 
 /**

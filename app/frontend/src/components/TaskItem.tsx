@@ -1,5 +1,7 @@
 import type { Task } from "../types";
 import { PRIORITY_LABEL, PRIORITY_VAR, prettyDate, dueTone } from "../lib/format";
+import { isImminent } from "../lib/deadline";
+import { useNow } from "../lib/useNow";
 import { useUpdateTask, useDeleteTask } from "../store/useTasks";
 import { markCompleted, unmarkCompleted } from "../lib/sessionCompleted";
 
@@ -8,6 +10,8 @@ export function TaskItem({ task, hideArchive = false }: { task: Task; hideArchiv
   const del = useDeleteTask();
   const done = task.status === "done";
   const tags = [...new Set(task.tags)];
+  const now = useNow();
+  const imminent = !done && isImminent(task, now);
 
   const toggle = () => {
     const next = done ? "todo" : "done";
@@ -29,7 +33,9 @@ export function TaskItem({ task, hideArchive = false }: { task: Task; hideArchiv
 
       <div className="task-body">
         <div className="task-title-row">
-          <span className="task-title">{task.title}</span>
+          <span className={`task-title${imminent ? " task-title--imminent" : ""}`}>
+            {task.title}
+          </span>
           <span
             className="task-pri"
             style={{ color: PRIORITY_VAR[task.priority] }}

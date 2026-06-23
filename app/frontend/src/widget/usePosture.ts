@@ -89,6 +89,7 @@ export function usePosture(): Posture {
   const expanded = !docked || pinned;
 
   const screenRef = useRef<Screen>({ left: 0, top: 0, width: 1440, height: 900 });
+  const screenInit = useRef(false); // 屏幕信息是否已取过：取过则展开/拖动直接用缓存，省 currentMonitor IPC
   const posRef = useRef<{ x: number; y: number }>({ x: init.x, y: init.y });
   const lastTarget = useRef<{ x: number; y: number }>({ x: init.x, y: init.y });
   const apiRef = useRef<WinApi | null>(null);
@@ -127,6 +128,7 @@ export function usePosture(): Posture {
           width: m.size.width / s,
           height: m.size.height / s,
         };
+        screenInit.current = true;
       }
     } catch {
       /* ignore */
@@ -152,7 +154,8 @@ export function usePosture(): Posture {
   const apply = useCallback(async () => {
     const api = await ensureApi();
     if (!api) return;
-    await refreshScreen();
+    // 仅首次取屏幕信息；之后展开/拖动直接用缓存，避免每次 currentMonitor IPC 拖慢展开
+    if (!screenInit.current) await refreshScreen();
     const scr = screenRef.current;
     const right = scr.left + scr.width;
     const bottom = scr.top + scr.height;
@@ -254,7 +257,7 @@ export function usePosture(): Posture {
   }, []);
 
   const onDragEnd = useCallback(
-    (sx: number, sy: number, isBall: boolean) => {
+    async (sx: number, sy: number, isBall: boolean) => {
       const d = drag.current;
       if (!d.active) return;
       d.active = false;
@@ -267,6 +270,8 @@ export function usePosture(): Posture {
         if (isBall || dockedRef.current) setPinned(true);
         return;
       }
+      // 拖动落定:重取屏幕(可能拖到了另一块显示器/改了分辨率)再判定吸附边界
+      await refreshScreen();
       // 真正松手:用最终窗口位置判定吸附 / 自由
       const finalX = d.wx + (sx - d.sx);
       const finalY = d.wy + (sy - d.sy);
@@ -297,7 +302,7 @@ export function usePosture(): Posture {
         /* ignore */
       }
     },
-    [apply],
+    [apply, refreshScreen],
   );
 
   // 最小化:吸附态直接收球;自由态就近吸边、保持当前高度。

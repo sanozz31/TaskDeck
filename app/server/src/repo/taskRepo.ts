@@ -202,6 +202,63 @@ export function listCompleted(): Task[] {
   return rows.map(rowToTask);
 }
 
+// ---- 优先级随 DDL 临近自动升级（仅向上，不降级）----
+
+const PRIORITY_RANK: Record<string, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
+const RANK_TO_PRIORITY = ["low", "medium", "high", "urgent"] as const;
+
+/**
+ * 任务截止时刻（ms，本地时区）；无 due_time 或 due_time 畸形视当天 23:59；无 due_date 返回 Infinity。
+ * @see app/frontend/src/lib/deadline.ts 的 dueAtMs —— 两端必须保持一致。
+ */
+function dueAtMs(t: Task): number {
+  if (!t.due_date) return Infinity;
+  const [y, m, d] = t.due_date.split("-").map(Number);
+  if (t.due_time) {
+    const [hh, mm] = t.due_time.split(":").map(Number);
+    // due_time 畸形（NaN）时回退当天 23:59，避免 NaN 让升级阶梯静默失效
+    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+      return new Date(y, m - 1, d, hh, mm).getTime();
+    }
+  }
+  return new Date(y, m - 1, d, 23, 59).getTime();
+}
+
+/**
+ * 按「距截止还剩多久」给开放任务自动提升优先级（阶梯）：
+ *   剩 ≤ 2h（含已过期）→ 急(urgent)；≤ 24h → 高(high)；≤ 72h → 中(medium)。
+ * **只升不降**：仅当目标档高于当前档才改写，已经更高的不动；done/archived/无截止日不动。
+ * 由后端定时器周期性调用（单一数据源，避免多窗口各写一遍）。返回改动条数。
+ */
+export function escalatePriorities(): number {
+  const db = getDb();
+  const now = Date.now();
+  const H = 3600_000;
+  const rows = db
+    .prepare(`SELECT * FROM tasks WHERE status IN ('todo','doing') AND due_date IS NOT NULL`)
+    .all() as TaskRow[];
+  const stmt = db.prepare(`UPDATE tasks SET priority = @priority, updated_at = @updated_at WHERE id = @id`);
+  let changed = 0;
+  const txn = db.transaction(() => {
+    for (const row of rows) {
+      const t = rowToTask(row);
+      const left = dueAtMs(t) - now;
+      let floor: number | null = null;
+      if (left <= 2 * H) floor = 3;
+      else if (left <= 24 * H) floor = 2;
+      else if (left <= 72 * H) floor = 1;
+      if (floor == null) continue;
+      const cur = PRIORITY_RANK[t.priority] ?? 1;
+      if (floor > cur) {
+        stmt.run({ id: t.id, priority: RANK_TO_PRIORITY[floor], updated_at: nowIso() });
+        changed++;
+      }
+    }
+  });
+  txn();
+  return changed;
+}
+
 /** 物理删除完成已满 days 天的任务，返回删除条数。 */
 export function purgeExpiredDone(days = 7): number {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString();

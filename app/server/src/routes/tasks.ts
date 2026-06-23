@@ -21,11 +21,14 @@ import { getSettings, setSettings } from "../repo/settingsRepo.js";
 
 export const tasksRouter = Router();
 
-/** 本地日期 YYYY-MM-DD（用于给 AI 推断相对日期）。 */
-function todayStr(): string {
+/** 本地当前时刻 'YYYY-MM-DD HH:MM（周X）'（给 AI 推断相对日期与时刻，如"十分钟后"）。 */
+function nowStr(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  const wk = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][d.getDay()];
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(
+    d.getMinutes(),
+  )}（${wk}）`;
 }
 
 /** AI 失败时的降级分析：原样入库为"待整理"，不阻塞闭环。 */
@@ -51,7 +54,7 @@ tasksRouter.post("/tasks", async (req, res) => {
   try {
     const provider = await getProvider();
     const knownTags = listTagDefs().map((t) => t.name);
-    const result = await provider.analyze(input, todayStr(), knownTags);
+    const result = await provider.analyze(input, nowStr(), knownTags);
     analysis = result.analysis;
     model = result.model;
   } catch (err) {

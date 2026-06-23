@@ -2,7 +2,7 @@ import express from "express";
 import type { AddressInfo } from "node:net";
 import { HOST, PORT } from "./config.js";
 import { getDb } from "./db.js";
-import { purgeExpiredDone } from "./repo/taskRepo.js";
+import { purgeExpiredDone, escalatePriorities } from "./repo/taskRepo.js";
 import { tasksRouter } from "./routes/tasks.js";
 
 const app = express();
@@ -27,6 +27,10 @@ app.use(tasksRouter);
 // 启动前确保 DB 就绪（建表），并清理已完成满 7 天的任务
 getDb();
 purgeExpiredDone();
+
+// 优先级随 DDL 临近自动升级：启动跑一次 + 每 5 分钟一轮（仅升不降，单一数据源）
+escalatePriorities();
+setInterval(escalatePriorities, 5 * 60 * 1000).unref();
 
 const server = app.listen(PORT, HOST, () => {
   const actual = (server.address() as AddressInfo)?.port ?? PORT;

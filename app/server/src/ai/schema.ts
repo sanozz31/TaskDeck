@@ -39,7 +39,9 @@ export const analysisJsonSchema = {
     due_time: {
       type: ["string", "null"],
       description:
-        "截止的具体时刻 HH:MM（24小时制）；仅当描述含明确时间（如'下午3点'→15:00、'晚上8点半'→20:30）时填，否则 null",
+        "截止的具体时刻 HH:MM（24小时制）。两类都要填：①明确时刻（'下午3点'→15:00、'晚上8点半'→20:30）；" +
+        "②相对偏移（'十分钟后''半小时后''2小时后'）——以 prompt 给出的当前时刻为基准换算出绝对 HH:MM，" +
+        "若换算后跨过零点则 due_date 进位到次日。无任何时间信号才填 null",
     },
     scheduled_date: {
       type: ["string", "null"],
@@ -49,18 +51,20 @@ export const analysisJsonSchema = {
   required: ["title", "tags", "priority", "due_date", "due_time", "scheduled_date"],
 } as const;
 
-/** 构造分析 prompt，注入"今天"与「已有标签库」以便模型推断日期、优先复用标签。 */
-export function buildAnalysisPrompt(input: string, today: string, knownTags: string[] = []): string {
+/** 构造分析 prompt，注入"当前时刻"与「已有标签库」以便模型推断日期/时刻、优先复用标签。 */
+export function buildAnalysisPrompt(input: string, now: string, knownTags: string[] = []): string {
   const tagLine =
     knownTags.length > 0
       ? `已有标签库：${knownTags.join("、")}。打标签时优先从中选最贴切的，都不合适时才新建简短中文标签。`
       : "";
   return [
-    `今天是 ${today}（星期参照真实日历）。`,
+    `现在是 ${now}（含日期与时刻，星期参照真实日历）。`,
     `请把下面这句任务描述解析为结构化任务：归纳简短标题、1-4个中文标签、`,
     `判断优先级，并按语义推断建议截止日(due_date)与执行日(scheduled_date)，`,
     `能推断相对日期就换算成具体 YYYY-MM-DD，无法推断则填 null。`,
-    `若含明确时刻则填 due_time 为 HH:MM（24小时制，如下午3点→15:00），否则 null。`,
+    `时间维度（due_time，HH:MM 24小时制）务必处理两类相对说法：`,
+    `①明确时刻"下午3点"→15:00；②相对偏移"十分钟后/半小时后/2小时后"——以上面给出的当前时刻为基准换算出绝对时刻，`,
+    `若跨过零点则 due_date 进位到次日；无任何时间信号才填 null。`,
     tagLine ? `\n${tagLine}` : "",
     `\n任务描述：「${input}」`,
   ].join("");

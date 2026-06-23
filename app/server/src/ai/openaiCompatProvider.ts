@@ -14,12 +14,12 @@ export class OpenAiCompatProvider implements ClaudeProvider {
   readonly name = "deepseek";
   constructor(private cfg: AiConfig) {}
 
-  async analyze(input: string, today: string, knownTags: string[] = []): Promise<AnalyzeResult> {
+  async analyze(input: string, now: string, knownTags: string[] = []): Promise<AnalyzeResult> {
     const { deepseekApiKey, deepseekBaseUrl, deepseekModel } = this.cfg;
     if (!deepseekApiKey) throw new Error("未配置 DeepSeek API Key");
 
     const prompt =
-      buildAnalysisPrompt(input, today, knownTags) +
+      buildAnalysisPrompt(input, now, knownTags) +
       `\n\n只输出一个符合下述 JSON Schema 的 JSON 对象，不要任何额外文字或代码块标记。\n` +
       `JSON Schema：${JSON.stringify(analysisJsonSchema)}`;
 

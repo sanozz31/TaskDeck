@@ -9,8 +9,11 @@ export interface AnalyzeResult {
 /** 调用 AI 分析任务的统一抽象。 */
 export interface ClaudeProvider {
   readonly name: string;
-  /** knownTags：当前标签库，注入 prompt 引导模型优先复用已有标签。 */
-  analyze(input: string, today: string, knownTags?: string[]): Promise<AnalyzeResult>;
+  /**
+   * now：当前时刻字符串（'YYYY-MM-DD HH:MM（周X）'），供模型换算相对日期/时刻。
+   * knownTags：当前标签库，注入 prompt 引导模型优先复用已有标签。
+   */
+  analyze(input: string, now: string, knownTags?: string[]): Promise<AnalyzeResult>;
 }
 
 /**

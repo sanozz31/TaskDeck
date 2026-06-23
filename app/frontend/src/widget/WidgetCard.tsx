@@ -1,6 +1,7 @@
 import type { Task } from "../types";
 import { PRIORITY_LABEL, PRIORITY_VAR, prettyDate, dueTone } from "../lib/format";
-import { pickTimelineTasks, todayStr, dayStr } from "../lib/deadline";
+import { pickTimelineTasks, todayStr, dayStr, isImminent } from "../lib/deadline";
+import { useNow } from "../lib/useNow";
 import { useUpdateTask } from "../store/useTasks";
 
 function isOpen(t: Task): boolean {
@@ -10,6 +11,8 @@ function isOpen(t: Task): boolean {
 /** 单行任务:勾选完成 + 标题 + 优先级点 + 截止时间(仅有具体 due_time 时显示)。 */
 function WidgetRow({ task }: { task: Task }) {
   const update = useUpdateTask();
+  const now = useNow();
+  const imminent = isImminent(task, now);
   return (
     <div className="wg-row">
       <button
@@ -18,7 +21,9 @@ function WidgetRow({ task }: { task: Task }) {
         aria-label="标记完成"
         title="标记完成"
       />
-      <span className="wg-row-title">{task.title}</span>
+      <span className={`wg-row-title${imminent ? " wg-row-title--imminent" : ""}`}>
+        {task.title}
+      </span>
       <span
         className="wg-row-pri"
         style={{ background: PRIORITY_VAR[task.priority] }}

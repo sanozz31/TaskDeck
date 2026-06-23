@@ -7,6 +7,19 @@
   grid-template-rows: minmax(0, 1fr);
   height: 100svh;
   overflow: hidden;
+  /* 全局默认不可选：框选复制不再带入布局空白/换行 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 只放开文字载体：复制只拿到文字本身。
+   输入框必须显式放开，否则继承 none 会导致无法在输入框选中文本。 */
+.app :where(p, h1, h2, h3, h4, h5, h6, span, li, td, th, label, strong, em, b, i,
+    input, textarea, div:not(:has(*)),
+    .task-title, .task-notes, .task-tag, .task-due,
+    .bubble, .dl-title, .chat-empty-title, .chat-empty-sub) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ===== 侧栏 ===== */
@@ -189,6 +202,9 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--sp-5) var(--sp-4);
+  /* 容器整体不可选，避免复制时把气泡间的空白/换行也选中 */
+  -webkit-user-select: none;
+  user-select: none;
 }
 .chat-empty {
   max-width: 620px;
@@ -223,6 +239,9 @@
   font-size: 15px;
   line-height: 1.55;
   max-width: 86%;
+  /* 仅气泡内文字可选：复制只拿到气泡内容，不含布局空白 */
+  -webkit-user-select: text;
+  user-select: text;
 }
 .bubble--user {
   background: var(--bubble-user);
@@ -382,6 +401,14 @@
   font-weight: 550;
   font-size: 14.5px;
 }
+/* 迫近（DDL 前 2 小时）：标题转红，提示时间紧迫（与静态优先级点互不影响） */
+.task-title--imminent {
+  color: var(--pri-urgent);
+  font-weight: 650;
+}
+.task-card--done .task-title--imminent {
+  color: inherit;
+}
 .task-pri {
   flex: none;
   font-size: 12px;
@@ -441,15 +468,30 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(320px, 420px) 1fr;
+  grid-template-rows: minmax(0, 1fr); /* 行高=视图高，不被右列内容撑高 */
   gap: var(--sp-5);
   padding: var(--sp-5);
-  overflow-y: auto;
+  overflow: hidden; /* 整体不滚动；滚动收敛到右侧任务列表内部 */
 }
 .cal-pane {
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
   padding: var(--sp-4);
+  min-height: 0;
+  overflow: hidden; /* 日历卡片拉满列高、底部贴近窗口底，自身不滚动 */
+}
+/* 右侧当天任务：标题钉顶，列表以日历卡片底（≈窗口底）为底做内部滚动 */
+.cal-day {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cal-day .task-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .rdp-root {
   --rdp-accent-color: var(--accent);
@@ -518,6 +560,31 @@
 .cal-num--year {
   width: 4.2em;
 }
+/* 年 / 月下拉：沿用数字框的克制外观，去掉原生箭头，hover/focus 有底色反馈 */
+.cal-sel {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  text-align-last: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cal-sel:hover {
+  background: var(--surface-hover);
+}
+.cal-sel:focus {
+  outline: none;
+  background: var(--canvas);
+  border-color: var(--accent);
+}
 .cal-num:hover {
   background: var(--surface-hover);
 }
@@ -559,6 +626,7 @@
 .cal-day-title {
   font-size: 16px;
   margin-bottom: var(--sp-4);
+  flex: 0 0 auto;
 }
 
 /* ===== 标签视图 ===== */
@@ -944,9 +1012,15 @@
     padding: var(--sp-4);
   }
 
-  /* 日历单列 */
+  /* 日历单列：堆叠 + 整体滚动（窄屏不做右列内部滚动） */
   .cal-view {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    overflow-y: auto;
+  }
+  .cal-day,
+  .cal-day .task-list {
+    overflow: visible;
   }
 
   /* 小按钮触摸放大 */
@@ -1385,8 +1459,12 @@
   text-overflow: ellipsis;
   max-width: 150px;
 }
-.dl-pill--overdue .dl-title {
+.dl-pill--overdue .dl-title,
+.dl-title--imminent {
   color: var(--pri-urgent);
+}
+.dl-title--imminent {
+  font-weight: 700;
 }
 .dl-check {
   flex: none;
