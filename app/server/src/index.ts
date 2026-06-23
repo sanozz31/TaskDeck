@@ -1,6 +1,6 @@
 import express from "express";
 import type { AddressInfo } from "node:net";
-import { HOST, PORT } from "./config.js";
+import { HOST, PORT, isAllowedOrigin } from "./config.js";
 import { getDb } from "./db.js";
 import { purgeExpiredDone, escalatePriorities } from "./repo/taskRepo.js";
 import { tasksRouter } from "./routes/tasks.js";
@@ -8,13 +8,21 @@ import { tasksRouter } from "./routes/tasks.js";
 const app = express();
 app.use(express.json());
 
-// 本地自用：仅监听 loopback，CORS 反射请求来源（开发期 Vite，打包后 tauri:// webview）
+// 本地自用：仅监听 loopback；CORS 走 allowlist（开发期 Vite + 打包后 tauri webview），
+// 不反射任意 Origin——否则浏览器里的任意网页都能跨源读写本机任务库。
+// 不放行的来源：不回 ACAO（响应不可读），且预检直接 403（挡掉 PATCH/DELETE/JSON-POST 等写操作）。
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin ?? "*");
-  res.header("Vary", "Origin");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+  const origin = req.headers.origin;
+  const allowed = isAllowedOrigin(origin);
+  if (allowed) {
+    if (origin) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+    }
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(allowed ? 204 : 403);
   next();
 });
 

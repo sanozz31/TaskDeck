@@ -68,7 +68,7 @@ tasksRouter.post("/tasks", async (req, res) => {
   const tasks = analyses.map((analysis) =>
     createTask({ rawInput: input, analysis, aiModel: model }),
   );
-  // 把 AI 实际用到的标签并入标签库（降级时的「待分类」不入库）
+  // 把 AI 实际用到的标签并入标签库（降级时的「待整理」不入库）
   if (!degraded) ensureTagDefs(tasks.flatMap((t) => t.tags));
   res.status(201).json({ tasks, degraded });
 });

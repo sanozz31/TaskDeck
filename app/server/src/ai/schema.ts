@@ -12,8 +12,8 @@ export interface Analysis {
 export const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
 /**
- * 传给 Agent SDK outputFormat 的 JSON Schema。
- * 注意：SDK 仅支持 type/enum/required/format 等基础约束，复杂约束写进 description。
+ * 注入 prompt 约束模型输出的 JSON Schema（OpenAI 兼容 provider，response_format=json_object）。
+ * 仅用 type/enum/required/format 等基础约束，复杂约束写进 description。
  */
 // 单个任务的字段 schema（一句话可拆多个，统一进 tasks 数组）
 const TASK_ITEM_SCHEMA = {

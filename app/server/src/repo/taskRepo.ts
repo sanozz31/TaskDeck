@@ -147,6 +147,7 @@ const PATCHABLE = new Set([
   "notes",
   "priority",
   "due_date",
+  "due_time",
   "scheduled_date",
   "status",
 ]);

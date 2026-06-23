@@ -38,4 +38,4 @@
 3. OpenAiCompatProvider 调 DeepSeek（OpenAI 兼容 `chat/completions`），约束返回 `Analysis` JSON。
 4. `taskRepo.createTask` 落库（tags 序列化为 JSON，生成 UUID/时间戳）。
 5. 返回完整 Task；前端 react-query `invalidate` → 各视图刷新。
-6. 若 AI 失败 → `fallbackAnalysis` 降级为「待分类」，仍入库。
+6. 若 AI 失败 → `fallbackAnalysis` 降级为「待整理」（tag `待整理`，不并入标签库），仍入库。
