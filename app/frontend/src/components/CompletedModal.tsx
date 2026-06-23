@@ -4,6 +4,7 @@ import { TaskList } from "./TaskList";
 import { ConfirmModal } from "./ConfirmModal";
 import { useCompletedTasks } from "../store/useTasks";
 import { api } from "../api/client";
+import { notifyTasksChanged } from "../lib/channel";
 
 /** 「已完成」弹窗：列出所有已完成任务，顶部注明 7 天自动清除，底部可一键清理全部。 */
 export function CompletedModal({ onClose }: { onClose: () => void }) {
@@ -17,9 +18,10 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
       await Promise.all(tasks.map((t) => api.deleteTask(t.id)));
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["calendar"] });
-      qc.invalidateQueries({ queryKey: ["tags"] });
+      qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+      qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      qc.invalidateQueries({ queryKey: ["tags"], exact: false });
+      notifyTasksChanged();
     },
   });
 

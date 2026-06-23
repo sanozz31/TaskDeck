@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { TaskItem } from "./TaskItem";
 import { useChatMessages, submitTask } from "../store/chatStore";
 import { DeadlineTimeline } from "./DeadlineTimeline";
+import { notifyTasksChanged } from "../lib/channel";
 
 const DRAFT_KEY = "taskdeck.chat.draft";
 
@@ -27,9 +28,10 @@ export function ChatPanel() {
     if (!text) return;
     setInput("");
     void submitTask(text, () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["tags"] });
-      qc.invalidateQueries({ queryKey: ["calendar"] });
+      qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+      qc.invalidateQueries({ queryKey: ["tags"], exact: false });
+      qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      notifyTasksChanged();
     });
   };
 

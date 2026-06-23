@@ -4,7 +4,12 @@
 
 ## [1.0.2] - 2026-06-23
 
-> 代码审查收敛版：修掉一处 CORS 安全隐患、补齐 `due_time` 可改、文档全面对齐现状。无功能性行为变化。
+> 代码审查收敛版 + 热修：`invalidateQueries` 键值不匹配导致时间轴不刷新、Widget 跨窗口通信。
+
+### 修复
+
+- **时间轴不刷新**：TanStack Query v5 的 `invalidateQueries({ queryKey: ["tasks"] })` 默认 `exact: true`，只匹配精确键 `["tasks"]`，无法命中 `["tasks", "all"]`、`["tasks", "completed"]` 等带二级键的查询。修复：全部 3 处失效点（`ChatPanel`、`useTasks`、`CompletedModal`）显式加 `exact: false`。
+- **Widget 不即时刷新**：主窗口与悬浮窗各持独立 `QueryClient`，主窗口的 `invalidateQueries` 无法让悬浮窗重新拉取数据，最长延迟 20 秒。修复：新增 `BroadcastChannel` 跨窗口通信（`lib/channel.ts`），主窗口任务变更时即时通知 Widget 侧 `invalidateQueries`。
 
 ### 安全
 

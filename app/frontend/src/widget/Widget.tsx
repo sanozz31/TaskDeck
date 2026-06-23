@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, waitForHealth } from "../api/client";
 import { isImminent } from "../lib/deadline";
 import { useNow } from "../lib/useNow";
 import { usePosture } from "./usePosture";
 import { AgendaView, AllView } from "./WidgetCard";
+import { onTasksChanged } from "../lib/channel";
 
 type Segment = "agenda" | "all";
 
@@ -13,9 +14,18 @@ export function Widget() {
   const [seg, setSeg] = useState<Segment>("agenda");
   const posture = usePosture();
 
+  const qc = useQueryClient();
+
   useEffect(() => {
     waitForHealth().then(setReady);
   }, []);
+
+  // 主窗口任务变更 → 主动刷新 Widget 缓存，不等 20s 轮询。
+  useEffect(() => {
+    return onTasksChanged(() => {
+      qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+    });
+  }, [qc]);
 
   // 组件数据:全部任务,每 20s 轮询保鲜;键与 useUpdateTask 失效对齐。
   const { data: tasks = [], isLoading } = useQuery({

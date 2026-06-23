@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { Task } from "../types";
+import { notifyTasksChanged } from "../lib/channel";
 
-/** 失效所有任务相关查询，让各视图刷新。 */
+/** 失效所有任务相关查询并通知 Widget，让各视图刷新。 */
 function useInvalidateAll() {
   const qc = useQueryClient();
   return () => {
-    qc.invalidateQueries({ queryKey: ["tasks"] });
-    qc.invalidateQueries({ queryKey: ["tags"] });
-    qc.invalidateQueries({ queryKey: ["calendar"] });
+    qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+    qc.invalidateQueries({ queryKey: ["tags"], exact: false });
+    qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
+    notifyTasksChanged();
   };
 }
 
