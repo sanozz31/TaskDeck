@@ -88,7 +88,7 @@ export async function waitForHealth(timeoutMs = 15000): Promise<boolean> {
 
 export const api = {
   createTask: (input: string) =>
-    req<{ task: Task; degraded: boolean }>("/tasks", {
+    req<{ tasks: Task[]; degraded: boolean }>("/tasks", {
       method: "POST",
       body: JSON.stringify({ input }),
     }),

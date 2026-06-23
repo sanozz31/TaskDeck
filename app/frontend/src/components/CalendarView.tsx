@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import { useEffect, useMemo, useState } from "react";
+import { DayPicker, type DayButtonProps } from "react-day-picker";
 import { zhCN } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { useCalendar } from "../store/useTasks";
@@ -11,6 +11,19 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+
+// 「完成日」覆盖图片：自动扫描 src/assets/calendar-overlays 下所有 png。
+// 往该目录加图即自动纳入随机池（dev 下新增图需重启一次 dev 让 Vite 重新扫描）。
+const OVERLAY_MODULES = import.meta.glob<string>("../assets/calendar-overlays/*.png", {
+  eager: true,
+  import: "default",
+});
+const OVERLAY_URLS: Record<string, string> = {}; // 文件名 → 打包后 URL
+for (const [path, url] of Object.entries(OVERLAY_MODULES)) {
+  OVERLAY_URLS[path.split("/").pop()!] = url;
+}
+const OVERLAY_NAMES = Object.keys(OVERLAY_URLS); // 稳定文件名，用于持久化（不存带 hash 的 URL）
+const DONES_KEY = "taskdeck.calendar.dones"; // { "YYYY-MM-DD": 图片文件名 }
 
 const PRI_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
 const RANK_NAME = ["low", "medium", "high", "urgent"] as const;
@@ -80,6 +93,83 @@ export function CalendarView() {
       setMonth(new Date(month.getFullYear(), m - 1, 1));
   };
 
+  // ===== 「完成日」覆盖图片 =====
+  // 某天命中任务（due 或 scheduled）≥1 且全部 done → 达成（每个任务同一天只计一次）
+  const doneDays = useMemo(() => {
+    const hit = new Map<string, { total: number; done: number }>();
+    (tasks ?? []).forEach((t) => {
+      const keys = new Set([t.due_date, t.scheduled_date].filter(Boolean) as string[]);
+      keys.forEach((k) => {
+        const e = hit.get(k) ?? { total: 0, done: 0 };
+        e.total += 1;
+        if (t.status === "done") e.done += 1;
+        hit.set(k, e);
+      });
+    });
+    const set = new Set<string>();
+    for (const [k, e] of hit) if (e.total > 0 && e.done === e.total) set.add(k);
+    return set;
+  }, [tasks]);
+
+  // 达成日 → 图片名映射，持久化；首次达成随机选一张、之后不改名
+  const [overlayMap, setOverlayMap] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(DONES_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    let changed = false;
+    const next = { ...overlayMap };
+    if (OVERLAY_NAMES.length > 0) {
+      for (const day of doneDays) {
+        if (!next[day]) {
+          next[day] = OVERLAY_NAMES[Math.floor(Math.random() * OVERLAY_NAMES.length)];
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      setOverlayMap(next);
+      try {
+        localStorage.setItem(DONES_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [doneDays, overlayMap]);
+
+  // 自定义日期按钮：达成日且未选中 → 叠加图片层（CSS 控制 hover 淡出）
+  const components = useMemo(
+    () => ({
+      MonthCaption: HiddenCaption,
+      DayButton: ({ day, modifiers, children, className, ...btn }: DayButtonProps) => {
+        const key = ymd(day.date);
+        const overlay = doneDays.has(key) ? overlayMap[key] : undefined;
+        const overlayUrl = overlay ? OVERLAY_URLS[overlay] : undefined;
+        const showOverlay = !!overlayUrl && !modifiers.selected;
+        return (
+          <button
+            className={showOverlay ? `${className ?? ""} cal-has-overlay` : className}
+            {...btn}
+          >
+            <span className="cal-day-num">{children}</span>
+            {showOverlay && (
+              <img
+                className="cal-overlay-img"
+                src={overlayUrl}
+                alt=""
+                draggable={false}
+              />
+            )}
+          </button>
+        );
+      },
+    }),
+    [doneDays, overlayMap],
+  );
+
   return (
     <div className="cal-view">
       <div className="cal-pane">
@@ -130,7 +220,7 @@ export function CalendarView() {
           selected={selected}
           onSelect={(d) => d && setSelected(d)}
           hideNavigation
-          components={{ MonthCaption: HiddenCaption }}
+          components={components}
           modifiers={{
             hasTask: allDays,
             taskUrgent: byPri.urgent,

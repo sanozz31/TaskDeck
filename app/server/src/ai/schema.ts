@@ -15,7 +15,8 @@ export const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
  * 传给 Agent SDK outputFormat 的 JSON Schema。
  * 注意：SDK 仅支持 type/enum/required/format 等基础约束，复杂约束写进 description。
  */
-export const analysisJsonSchema = {
+// 单个任务的字段 schema（一句话可拆多个，统一进 tasks 数组）
+const TASK_ITEM_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
@@ -51,6 +52,22 @@ export const analysisJsonSchema = {
   required: ["title", "tags", "priority", "due_date", "due_time", "scheduled_date"],
 } as const;
 
+/** 顶层输出：一句话可能含多个任务，统一返回 { tasks: [...] }（至少 1 个）。 */
+export const analysisJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    tasks: {
+      type: "array",
+      minItems: 1,
+      description:
+        "解析出的任务列表，至少 1 个。一句话含多件事、或'X号到Y号每天/每周'这类日期范围与重复，拆成多个任务逐一列出",
+      items: TASK_ITEM_SCHEMA,
+    },
+  },
+  required: ["tasks"],
+} as const;
+
 /** 构造分析 prompt，注入"当前时刻"与「已有标签库」以便模型推断日期/时刻、优先复用标签。 */
 export function buildAnalysisPrompt(input: string, now: string, knownTags: string[] = []): string {
   const tagLine =
@@ -65,6 +82,9 @@ export function buildAnalysisPrompt(input: string, now: string, knownTags: strin
     `时间维度（due_time，HH:MM 24小时制）务必处理两类相对说法：`,
     `①明确时刻"下午3点"→15:00；②相对偏移"十分钟后/半小时后/2小时后"——以上面给出的当前时刻为基准换算出绝对时刻，`,
     `若跨过零点则 due_date 进位到次日；无任何时间信号才填 null。`,
+    `\n【重要】一句话可能包含多个任务：若含多件事、或"X号到Y号每天/每周"这类日期范围或重复，` +
+      `请逐一拆成多个任务放进 tasks 数组（如"7月1号到5号每天中午12点健身"→ 拆成 7-01…7-05 共 5 个任务，各 due_time 12:00）；` +
+      `单个任务也放进 tasks（长度为 1）。`,
     tagLine ? `\n${tagLine}` : "",
     `\n任务描述：「${input}」`,
   ].join("");

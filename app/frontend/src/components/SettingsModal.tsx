@@ -60,7 +60,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         <div className="modal-head">
           <div>
             <div className="modal-title">设置</div>
-            <div className="modal-sub">模型与语言偏好，存于本机</div>
+            <div className="modal-sub">所有配置仅保存于本机</div>
           </div>
           <button className="modal-close" onClick={submit} aria-label="完成" title="保存并关闭">
             ×
@@ -131,7 +131,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <div className="set-row">
               <div>
                 <div className="set-label">悬浮窗</div>
-                <div className="set-hint">桌面常驻的任务悬浮球,拖到边缘吸附,移上去展开</div>
+                <div className="set-hint">
+                  屏幕常驻的悬浮球，点击或拖出即可展开，拖到屏幕边缘吸附；有临近deadline的任务时，悬浮球会呼吸预警
+                </div>
               </div>
               <button
                 type="button"

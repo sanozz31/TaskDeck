@@ -2,7 +2,7 @@ import type { Analysis } from "./schema.js";
 import { getAiConfig } from "../repo/settingsRepo.js";
 
 export interface AnalyzeResult {
-  analysis: Analysis;
+  analyses: Analysis[];
   model: string | null;
 }
 

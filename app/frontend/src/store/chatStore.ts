@@ -7,7 +7,8 @@ export interface ChatMsg {
   id: string;
   role: "user" | "assistant";
   text?: string;
-  task?: Task;
+  task?: Task; // 旧版单任务（兼容历史 localStorage）
+  tasks?: Task[]; // 一句话可拆出的多个任务
   degraded?: boolean;
   pending?: boolean;
 }
@@ -79,7 +80,7 @@ export async function submitTask(input: string, onSettled?: () => void): Promise
     setMsgs(
       msgs.map((m) =>
         m.id === pendingId
-          ? { ...m, pending: false, task: res.task, degraded: res.degraded }
+          ? { ...m, pending: false, tasks: res.tasks, degraded: res.degraded }
           : m,
       ),
     );

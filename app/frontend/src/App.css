@@ -98,27 +98,41 @@
 }
 .nav-icon {
   width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 18px;
   text-align: center;
-  font-size: 14px;
+}
+.nav-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  transform: translateY(1px);
+  -webkit-user-drag: none;
+  user-select: none;
 }
 .sidebar-foot {
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   font-size: 11px;
   color: var(--ink-tertiary);
   padding: var(--sp-2);
 }
 .model-tag {
-  flex: none;
-  max-width: 50%;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
   color: var(--ink-tertiary);
+  position: relative;
+  top: 2px; /* 与齿轮视觉基线对齐，下移 2px */
 }
 
 /* ===== 主区 ===== */
@@ -362,6 +376,10 @@
   background: var(--canvas);
   margin-top: 2px;
 }
+/* 多任务：卡片之间留间距，避免挤在一起 */
+.bubble--ai .task-card + .task-card {
+  margin-top: var(--sp-2);
+}
 .task-card--done {
   opacity: 0.55;
 }
@@ -497,7 +515,11 @@
   --rdp-accent-color: var(--accent);
   --rdp-accent-background-color: var(--accent-soft);
   --rdp-today-color: var(--accent);
+  --rdp-outside-opacity: 1; /* 其他月：弱化全靠浅灰文字 #b0b0b5，不叠加透明度 */
   margin: 0;
+}
+.rdp-outside .rdp-day_button {
+  color: #8e8e93; /* 其他月：中灰弱化、突出本月 */
 }
 .rdp-hasTask:not(.rdp-selected) {
   position: relative;
@@ -528,7 +550,40 @@
   background: var(--pri-urgent);
 }
 
-/* 日历头部：可点击 / 可输入数字切换年月 */
+/* 「完成日」覆盖图片：盖住日号；hover 淡出露数字（选中态由 JS 不渲染图片，露出边框圈+数字） */
+.rdp-day_button {
+  position: relative;
+}
+.cal-overlay-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.rdp-day_button:hover .cal-overlay-img {
+  opacity: 0;
+}
+/* 达成日数字：平时随图片隐藏，hover 时露出（图片同时淡出） */
+.cal-day-num {
+  transition: opacity 0.12s;
+}
+.cal-has-overlay .cal-day-num {
+  opacity: 0;
+}
+.cal-has-overlay:hover .cal-day-num {
+  opacity: 1;
+}
+/* 显示图片的达成日：隐藏底部优先级圆点（圆点在日期格 cell 上，用 :has 命中） */
+.rdp-hasTask:has(.cal-overlay-img)::after {
+  display: none !important;
+}
+
+/* 日历头部：年 / 月下拉 + 上下月按钮切换 */
 .cal-head {
   display: flex;
   align-items: center;
@@ -1326,7 +1381,7 @@
   background: transparent;
   color: var(--ink-secondary);
   font-size: 13px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   transition: background 0.12s, color 0.12s;
 }
@@ -1335,7 +1390,17 @@
   color: var(--ink);
 }
 .settings-gear {
-  font-size: 15px;
+  font-size: 30px;
+  line-height: 1;
+}
+/* 品牌区与设置齿轮：UI chrome，不可选中复制（覆盖全局文字白名单） */
+.brand,
+.brand-name,
+.brand-sub,
+.settings-btn,
+.settings-gear {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ===== 对话页顶部 DDL 时间轴标尺 ===== */

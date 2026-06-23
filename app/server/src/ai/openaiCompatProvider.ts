@@ -54,7 +54,14 @@ export class OpenAiCompatProvider implements ClaudeProvider {
     const start = content.indexOf("{");
     const end = content.lastIndexOf("}");
     if (start < 0 || end <= start) throw new Error("DeepSeek 未返回可解析的 JSON");
-    const analysis = JSON.parse(content.slice(start, end + 1)) as Analysis;
-    return { analysis, model: data.model ?? deepseekModel };
+    const parsed = JSON.parse(content.slice(start, end + 1)) as {
+      tasks?: Analysis[];
+    } & Partial<Analysis>;
+    // 模型返回 { tasks:[...] } 用之；万一直接返回单个对象，兜底包成数组
+    const analyses =
+      Array.isArray(parsed.tasks) && parsed.tasks.length > 0
+        ? parsed.tasks
+        : [parsed as Analysis];
+    return { analyses, model: data.model ?? deepseekModel };
   }
 }

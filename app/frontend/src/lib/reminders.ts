@@ -1,4 +1,5 @@
 import { prettyDate } from "./format";
+import { dueAtMs } from "./deadline";
 import type { Task } from "../types";
 
 /**
@@ -15,22 +16,6 @@ const STAGES = [
   { key: "6h", before: 6 * H, label: "约 6 小时" },
 ] as const;
 const GRACE_MS = 24 * H; // 超过截止 24h 后不再补提醒，避免刷屏
-
-function parseYmd(date: string): [number, number, number] {
-  const [y, m, d] = date.split("-").map(Number);
-  return [y, m, d];
-}
-
-/** 任务的截止时刻（ms）；无 due_date 则 null。纯日期锚定当天 23:59。 */
-function dueAtOf(task: Task): number | null {
-  if (!task.due_date) return null;
-  const [y, m, d] = parseYmd(task.due_date);
-  if (task.due_time) {
-    const [hh, mm] = task.due_time.split(":").map(Number);
-    return new Date(y, m - 1, d, hh, mm).getTime();
-  }
-  return new Date(y, m - 1, d, 23, 59).getTime();
-}
 
 function loadNotified(): Set<string> {
   try {
@@ -58,8 +43,8 @@ export function checkReminders(tasks: Task[]): void {
 
   for (const task of tasks) {
     if (task.status === "done" || task.status === "archived") continue;
-    const dueAt = dueAtOf(task);
-    if (dueAt === null) continue;
+    const dueAt = dueAtMs(task); // 复用 deadline.ts 的统一「截止时刻」口径（无 due_time→当天 23:59）
+    if (!Number.isFinite(dueAt)) continue; // 无 due_date：dueAtMs 返回 Infinity
     if (now > dueAt + GRACE_MS) continue; // 过期太久不再补提醒
 
     const due = `${prettyDate(task.due_date)}${task.due_time ? " " + task.due_time : ""}`;

@@ -4,8 +4,10 @@ import { TaskItem } from "./TaskItem";
 import { useChatMessages, submitTask } from "../store/chatStore";
 import { DeadlineTimeline } from "./DeadlineTimeline";
 
+const DRAFT_KEY = "taskdeck.chat.draft";
+
 export function ChatPanel() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => localStorage.getItem(DRAFT_KEY) ?? "");
   const messages = useChatMessages();
   const qc = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -13,6 +15,12 @@ export function ChatPanel() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // 草稿持久化：切窗口/重挂载也不丢未发送的输入（发送后 setInput("") 会清掉草稿）
+  useEffect(() => {
+    if (input) localStorage.setItem(DRAFT_KEY, input);
+    else localStorage.removeItem(DRAFT_KEY);
+  }, [input]);
 
   const submit = (raw?: string) => {
     const text = (raw ?? input).trim();
@@ -60,14 +68,18 @@ export function ChatPanel() {
                     <span className="dot" />
                     <span className="dot" />
                   </div>
-                ) : m.task ? (
+                ) : (m.tasks?.length ?? 0) > 0 || m.task ? (
                   <div className="bubble bubble--ai">
                     <div className="ai-lead">
                       {m.degraded
                         ? "AI 暂时不可用，已先记下，请在设置中配置模型。"
-                        : "已登记 ✓"}
+                        : (m.tasks?.length ?? 1) > 1
+                          ? `已登记 ${m.tasks!.length} 项 ✓`
+                          : "已登记 ✓"}
                     </div>
-                    <TaskItem task={m.task} hideArchive />
+                    {(m.tasks ?? (m.task ? [m.task] : [])).map((t) => (
+                      <TaskItem key={t.id} task={t} hideArchive />
+                    ))}
                   </div>
                 ) : (
                   <div className="bubble bubble--ai">{m.text}</div>

@@ -13,7 +13,7 @@
 
 验收（已通过）：输入「下周三前交季度报告」「周五前交报销单」「周日陪家人散步」→ 标题/标签/优先级/日期均正确推断，四视图可见，数据持久化。模型实测 `deepseek-v4-pro`。
 
-## M2 — 可用性增强（进行中）
+## M2 — 可用性增强 ✅ 已完成（并入 v1.0.0）
 
 > **变更说明（重要）**：本里程碑后期已将「本机 Claude Code（Agent SDK）」通路**整体下线，AI 统一走 DeepSeek**（`server` 不再依赖 `@anthropic-ai`，`provider.ts` 唯一实现为 `OpenAiCompatProvider`）。下文涉及「Claude Code 默认 / 多模型切换 / 剔除 SDK 瘦身」的条目均为**当时的历史记录**，现状以本说明为准。
 
@@ -136,3 +136,39 @@
 - **降级文案**：去掉历史 Claude Code 措辞，改为「请在设置中配置模型」。
 
 > 本轮经独立 code review：无 Critical / High 阻断级落地缺陷；High 级「全局复制误伤 `div` 文案」、Medium 级「`due_time` 畸形→`NaN` 静默失效」「跨显示器屏幕缓存失准」均已修复。
+
+## v1.0.0 — 首个正式版 ✅ 2026-06-23
+
+> M1→M6 全部完成后的首个正式版。核心能力完整闭环，已产出 48.7 MB DMG。
+
+### 本版新增（相对于 0.3.0）
+
+- **多任务拆解**：一句话含多件事、或日期范围/重复（「X 号到 Y 号每天/每周」），AI 逐一拆成多条入库。Schema 从单对象升级为 `{ tasks: [...] }` 数组，provider→路由→前端全链路适配。历史单任务数据（`ChatMsg.task`）保留兼容。
+- **日历「完成日」图片**：某天所有任务完成时数字变为随机覆盖图（`import.meta.glob` 自动扫描 `src/assets/calendar-overlays/`）；hover 淡出露数字，点击显示选中圈；图片名持久化到 `localStorage`。往目录加图即自动纳入随机池。
+- **输入草稿持久化**：对话输入框未发送的文字存入 `localStorage`（`taskdeck.chat.draft`），切窗口 / 重挂载不丢。
+- **截止时刻口径统一**：`reminders.ts` 删除重复的 `dueAtOf` 函数，改为复用 `deadline.ts` 的 `dueAtMs`——迫近高亮、优先级升级、DDL 提醒三项能力共享同一时间计算源，消除多份日期/时刻解析实现的漂移风险。
+- **导航图标**：侧栏四图标从 emoji 换为自绘 PNG（`/nav-icons/`），视觉更统一。
+- **设置优化**：齿轮放大、去"设置"文字、模型名左对齐；副标题改为「所有配置仅保存于本机」；悬浮窗说明补充迫近呼吸预警描述。
+- **版本号统一升为 1.0.0**：`package.json`、`Cargo.toml`、`tauri.conf.json` 三处同步。
+
+### 三大重点能力回顾
+
+| 重点 | 涉及模块 | 说明 |
+|---|---|---|
+| **多任务安排** | `schema.ts` / `openaiCompatProvider.ts` / `routes/tasks.ts` / `chatStore.ts` / `ChatPanel.tsx` | 一句话→N 条任务，日期范围/重复自动展开；前端「已登记 N 项 ✓」 |
+| **时间检测 & 优先级实时变更** | `deadline.ts`（`dueAtMs`、`isImminent`）/ `taskRepo.ts`（`escalatePriorities`）/ `useNow.ts`（30s 心跳） | 截止时刻单源计算 → 迫近判定 + 优先级自动升级（≤2h→急/≤24h→高/≤72h→中，只升不降） |
+| **DDL 提醒** | `reminders.ts`（复用 `dueAtMs`）/ Web Notification + `localStorage` 去重 | 截止前 24h/6h 各弹一次；过期 24h 不再补；纯日期锚定 23:59 |
+
+### 遗留 & 后续（M4+）
+
+M2 剩余待办（仍开放）：
+- 任务编辑 UI（`PATCH /tasks/:id` 已就绪，缺 UI）
+- 标签多选筛选、重命名
+- 日历周视图、拖拽改期
+
+M4 规划（需求外，待排期）：
+- 大任务拆解为子任务并排期
+- 分钟级精细排期、重复任务
+- **通知常驻**：关闭 App 也能提醒（托盘 / 后台常驻进程，开机自启）——补齐当前「仅 App 运行时生效」的 MVP 限制
+- 提醒联动 Mochi 表情
+- 对话式追问改单（「把这个改到下周」）

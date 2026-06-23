@@ -48,25 +48,28 @@ tasksRouter.post("/tasks", async (req, res) => {
   const input = String(req.body?.input ?? "").trim();
   if (!input) return res.status(400).json({ error: "input 不能为空" });
 
-  let analysis: Analysis;
+  let analyses: Analysis[];
   let model: string | null = null;
   let degraded = false;
   try {
     const provider = await getProvider();
     const knownTags = listTagDefs().map((t) => t.name);
     const result = await provider.analyze(input, nowStr(), knownTags);
-    analysis = result.analysis;
+    analyses = result.analyses;
     model = result.model;
   } catch (err) {
     console.error("[tasks] AI 分析失败，降级入库：", err);
-    analysis = fallbackAnalysis(input);
+    analyses = [fallbackAnalysis(input)];
     degraded = true;
   }
 
-  const task = createTask({ rawInput: input, analysis, aiModel: model });
+  // 一句话可能拆出多个任务，逐一入库
+  const tasks = analyses.map((analysis) =>
+    createTask({ rawInput: input, analysis, aiModel: model }),
+  );
   // 把 AI 实际用到的标签并入标签库（降级时的「待分类」不入库）
-  if (!degraded) ensureTagDefs(task.tags);
-  res.status(201).json({ task, degraded });
+  if (!degraded) ensureTagDefs(tasks.flatMap((t) => t.tags));
+  res.status(201).json({ tasks, degraded });
 });
 
 /** GET /tasks —— 列任务，支持 status/tag/from/to 过滤。 */

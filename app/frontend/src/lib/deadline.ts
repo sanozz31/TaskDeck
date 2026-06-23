@@ -18,7 +18,8 @@ export function dayStr(offset: number): string {
 
 /**
  * 任务截止时刻（ms）；无 due_time 或 due_time 畸形视为当天 23:59；无 due_date 返回 Infinity。
- * @see app/server/src/repo/taskRepo.ts 的 dueAtMs —— 两端必须保持一致。
+ * 前端唯一真源：迫近高亮(isImminent) 与 DDL 提醒(reminders.ts) 都复用本函数。
+ * @see app/server/src/repo/taskRepo.ts 的 dueAtMs —— 后端独立一份（前后端分包），口径必须与此一致。
  */
 export function dueAtMs(t: Task): number {
   if (!t.due_date) return Infinity;
