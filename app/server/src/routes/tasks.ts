@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getProvider } from "../ai/provider.js";
 import type { Analysis } from "../ai/schema.js";
+import { clearAllData } from "../db.js";
 import {
   archiveTask,
   createTask,
@@ -174,6 +175,12 @@ tasksRouter.patch("/settings", (req, res) => {
   if (b.setupDone !== undefined) map.setup_done = b.setupDone ? "1" : "0";
   setSettings(map);
   res.json({ settings: publicSettings() });
+});
+
+/** DELETE /tasks/clear-all —— 清除所有本地数据（任务 / 标签库 / 设置），重置为初始状态。 */
+tasksRouter.delete("/tasks/clear-all", (_req, res) => {
+  clearAllData();
+  res.json({ ok: true });
 });
 
 /** DELETE /tasks/:id —— 软删（归档）。 */

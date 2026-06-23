@@ -144,4 +144,7 @@ export const api = {
 
   deleteTask: (id: string) =>
     req<{ ok: boolean }>(`/tasks/${id}`, { method: "DELETE" }),
+
+  clearAllData: () =>
+    req<{ ok: boolean }>(`/tasks/clear-all`, { method: "DELETE" }),
 };

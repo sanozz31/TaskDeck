@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, useUpdateSettings } from "../store/useTasks";
 import { CLAUDE_PAUSED } from "../lib/env";
 import { isWidgetEnabled, showWidget, hideWidget } from "../lib/widgetWindow";
+import { ConfirmModal } from "./ConfirmModal";
+import { api } from "../api/client";
 
 /** DeepSeek 当前生产模型（V4 系列，1M 上下文，OpenAI 兼容）。
  *  旧别名 deepseek-chat / deepseek-reasoner 官方将于 2026/07/24 停用，故不再列出。 */
@@ -26,6 +29,24 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     const next = !widgetOn;
     setWidgetOn(next);
     void (next ? showWidget() : hideWidget());
+  };
+
+  // 清除所有本地数据
+  const qc = useQueryClient();
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const clearAll = async () => {
+    // 清除前端 localStorage 所有 taskdeck 前缀的 key
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("taskdeck.")) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+    // 清除后端数据库
+    await api.clearAllData();
+    // 刷新前端缓存 + 重载页面
+    qc.invalidateQueries();
+    window.location.reload();
   };
 
   // 拉到设置后回填（apiKey 不回显，仅用 hasDeepseekKey 提示）
@@ -159,9 +180,40 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               <option value="en">English（即将支持）</option>
             </select>
           </div>
-        </div>
 
+          {/* 数据管理 */}
+          <div className="set-group">
+            <div className="set-row" style={{ alignItems: "flex-end" }}>
+              <div>
+                <div className="set-label" style={{ color: "var(--ink-secondary)" }}>
+                  数据管理
+                </div>
+                <div className="set-hint">
+                  清除所有本地任务、对话记录与各项设置，恢复为初始状态，数据不可恢复。
+                </div>
+              </div>
+              <button
+                className="btn-danger"
+                style={{ padding: "8px 16px", fontSize: 13, flexShrink: 0 }}
+                onClick={() => setConfirmingClear(true)}
+              >
+                清除所有本地数据
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {confirmingClear && (
+        <ConfirmModal
+          title="清除所有本地数据"
+          message="将删除所有任务、对话记录与各项设置，数据不可恢复。确定继续？"
+          confirmText="清除全部"
+          danger
+          onConfirm={clearAll}
+          onClose={() => setConfirmingClear(false)}
+        />
+      )}
     </div>
   );
 }

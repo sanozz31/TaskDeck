@@ -104,3 +104,15 @@ function migrate(db: Database.Database): void {
     for (const [k, v] of Object.entries(defaults)) putDefault.run(k, v);
   })();
 }
+
+/** 清除所有本地数据：清空 tasks / tag_defs / settings，重新种入预设标签与默认设置。 */
+export function clearAllData(): void {
+  const db = getDb();
+  db.transaction(() => {
+    db.exec(`DELETE FROM tasks`);
+    db.exec(`DELETE FROM tag_defs`);
+    db.exec(`DELETE FROM settings`);
+  })();
+  // 重新建默认数据（预设标签 + 默认设置）
+  migrate(db);
+}
