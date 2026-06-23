@@ -226,7 +226,7 @@ function dueAtMs(t: Task): number {
 
 /**
  * 按「距截止还剩多久」给开放任务自动提升优先级（阶梯）：
- *   剩 ≤ 2h（含已过期）→ 急(urgent)；≤ 24h → 高(high)；≤ 72h → 中(medium)。
+ *   剩 ≤ 24h（含已过期）→ 急(urgent)；≤ 48h → 高(high)；≤ 72h → 中(medium)。
  * **只升不降**：仅当目标档高于当前档才改写，已经更高的不动；done/archived/无截止日不动。
  * 由后端定时器周期性调用（单一数据源，避免多窗口各写一遍）。返回改动条数。
  */
@@ -244,8 +244,8 @@ export function escalatePriorities(): number {
       const t = rowToTask(row);
       const left = dueAtMs(t) - now;
       let floor: number | null = null;
-      if (left <= 2 * H) floor = 3;
-      else if (left <= 24 * H) floor = 2;
+      if (left <= 24 * H) floor = 3;
+      else if (left <= 48 * H) floor = 2;
       else if (left <= 72 * H) floor = 1;
       if (floor == null) continue;
       const cur = PRIORITY_RANK[t.priority] ?? 1;

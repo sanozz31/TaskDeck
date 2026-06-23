@@ -129,7 +129,7 @@
 - **迫近高亮**：DDL 前 2 小时内（含已过期未完成）任务标题实时变红——覆盖悬浮窗近期 / 全部、主窗口全部 / 日历 / 标签、对话页 DDL 时间轴。共享 `isImminent(task, now)`（`lib/deadline.ts`）+ 共享 30s 心跳 `useNow()`（`lib/useNow.ts`，模块级单一定时器、多组件订阅）。**重要度（静态 priority）与紧急度（实时派生）分离、互不污染**。
 - **悬浮球告警**：有迫近任务时白光晕脉动 + 透明度闪烁 + 浮动；无迫近任务时同款白光晕 + 半幅浮动的静止态，两态统一大小。
 - **透明窗黑底了结（M5 遗留）**：靠常驻 `filter` 动画持续重绘，修掉静止态四角黑底——M5 的已知遗留至此解决。
-- **优先级随 DDL 自动升级**：后端 `escalatePriorities()`（`taskRepo.ts`）按距截止远近自动提升开放任务优先级（≤2h→急、≤24h→高、≤72h→中），**只升不降、幂等**；启动 + 每 5 分钟一轮（`setInterval(...).unref()`）。前端各视图 60s 轮询刷新。
+- **优先级随 DDL 自动升级**：后端 `escalatePriorities()`（`taskRepo.ts`）按距截止远近自动提升开放任务优先级（≤24h→急、≤48h→高、≤72h→中），**只升不降、幂等**；启动 + 每 5 分钟一轮（`setInterval(...).unref()`）。前端各视图 60s 轮询刷新。
 - **相对时间解析**：给 AI prompt 注入当前精确时刻（含星期），支持「十分钟后 / 半小时后 / 2 小时后」换算为绝对截止时刻、跨零点进位次日（`schema.ts` / `routes/tasks.ts`，provider 参数 today→now）。
 - **日历年月下拉**：修掉受控数字输入框中间态导致的「年月切不动」bug，改为下拉选择（年份今年 ±10），选即切。
 - **全局复制**：框选复制只取文字本身，不带入布局空白 / 换行（`.app` user-select 策略 + 文字载体白名单含纯文本 `div`）。
@@ -157,7 +157,7 @@
 | 重点 | 涉及模块 | 说明 |
 |---|---|---|
 | **多任务安排** | `schema.ts` / `openaiCompatProvider.ts` / `routes/tasks.ts` / `chatStore.ts` / `ChatPanel.tsx` | 一句话→N 条任务，日期范围/重复自动展开；前端「已登记 N 项 ✓」 |
-| **时间检测 & 优先级实时变更** | `deadline.ts`（`dueAtMs`、`isImminent`）/ `taskRepo.ts`（`escalatePriorities`）/ `useNow.ts`（30s 心跳） | 截止时刻单源计算 → 迫近判定 + 优先级自动升级（≤2h→急/≤24h→高/≤72h→中，只升不降） |
+| **时间检测 & 优先级实时变更** | `deadline.ts`（`dueAtMs`、`isImminent`）/ `taskRepo.ts`（`escalatePriorities`）/ `useNow.ts`（30s 心跳） | 截止时刻单源计算 → 迫近判定 + 优先级自动升级（≤24h→急/≤48h→高/≤72h→中，只升不降） |
 | **DDL 提醒** | `reminders.ts`（复用 `dueAtMs`）/ Web Notification + `localStorage` 去重 | 截止前 24h/6h 各弹一次；过期 24h 不再补；纯日期锚定 23:59 |
 
 ### 遗留 & 后续（M4+）
