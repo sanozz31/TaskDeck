@@ -2,6 +2,23 @@
 
 本项目版本号遵循 `主.次.修订`。日期为发布当天（本地时区）。
 
+## [1.0.2] - 2026-06-23
+
+> 代码审查收敛版：修掉一处 CORS 安全隐患、补齐 `due_time` 可改、文档全面对齐现状。无功能性行为变化。
+
+### 安全
+
+- **CORS 收敛为 allowlist**：服务端不再反射任意 `Origin`，仅放行开发期来源（`TASKDECK_ORIGIN`，默认 `localhost:5173`）与 Tauri webview（`tauri://*`、`tauri.localhost`）。不放行来源不回 `Access-Control-Allow-Origin`、预检直接 `403`——挡掉浏览器中任意网页对本机 loopback 任务库的跨源写操作。
+
+### 改进
+
+- **任务可改截止时刻**：`PATCH /tasks/:id` 字段白名单补入 `due_time`，为后续任务编辑 UI 铺路（此前只能改 `due_date`，时刻会被静默丢弃）。
+
+### 文档
+
+- 三份文档对齐现状：`api.md`（端点全集、`/health` provider 为 `deepseek`、删除已下线的 `TASKDECK_PROVIDER/MODEL` 环境变量）、`data-model.md`（补 `due_time`/`completed_at`、`category` 标 deprecated、新增 `tag_defs`/`settings` 表）、`architecture.md`（AI 降级 tag 修正为「待整理」）。
+- 代码注释清理：统一降级 tag 措辞为「待整理」、去除 `schema.ts` 残留的 Agent SDK 字样。
+
 ## [1.0.1] - 2026-06-23
 
 ### 修复
