@@ -8,7 +8,7 @@
     "devUrl": "http://localhost:5173"
   },
   "app": {
-    "macOSPrivateApi": true,
+    "macOSPrivateApi": false,
     "windows": [
       {
         "label": "main",
@@ -43,7 +43,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg"],
+    "targets": ["nsis"],
     "externalBin": ["binaries/taskdeck-node"],
     "resources": {
       "sidecar-server": "server"

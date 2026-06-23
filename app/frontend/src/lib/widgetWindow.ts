@@ -9,6 +9,12 @@ function inTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+function isMacOS(): boolean {
+  const platform = navigator.platform?.toLowerCase() ?? "";
+  const userAgent = navigator.userAgent?.toLowerCase() ?? "";
+  return platform.includes("mac") || userAgent.includes("mac os x");
+}
+
 /** 是否开启(默认开;仅当用户显式关过、存了 "0" 才为关)。 */
 export function isWidgetEnabled(): boolean {
   try {
@@ -43,6 +49,7 @@ export async function showWidget(): Promise<void> {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function nudgeRedraw(w: any): Promise<void> {
+  if (!isMacOS()) return;
   try {
     const { PhysicalSize } = await import("@tauri-apps/api/dpi");
     const sz = await w.innerSize(); // PhysicalSize
