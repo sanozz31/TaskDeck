@@ -178,6 +178,15 @@ M4 规划（需求外，待排期）：
 
 - **悬浮球拖出即展开**：从边缘拖出悬浮球松手后不再保持球形态，直接展开为卡片。吸附判定逻辑不变（距边缘 72px 内仍触发贴边），卡片拖动收球逻辑也不变。
 
+## v1.0.2 — 代码审查收敛版 ✅ 2026-06-23
+
+> 热修：时间轴不刷新 + Widget 跨窗口即时同步。
+
+- **时间轴不刷新**：TanStack Query v5 `invalidateQueries` 默认 `exact: true`，导致只命中精确键 `["tasks"]`，无法刷新 `["tasks", "all"]` 等二级键查询。修复：全部失效点显式加 `exact: false`。
+- **Widget 不即时刷新**：主窗口与悬浮窗各持独立 `QueryClient`，主窗口 `invalidateQueries` 无法让悬浮窗重新拉取数据，最长延迟 20s。修复：新增 `BroadcastChannel` 跨窗口通信（`lib/channel.ts`），主窗口任务变更时即时通知 Widget 侧刷新。
+- **CORS 收敛为 allowlist**：服务端不再反射任意 `Origin`，仅放行开发期来源与 Tauri webview（`tauri://*`、`tauri.localhost`），不放行来源不回 `Access-Control-Allow-Origin`、预检直接 `403`。
+- **任务可改截止时刻**：`PATCH /tasks/:id` 字段白名单补入 `due_time`。
+
 ## v1.0.1 — 窗口关闭修复 · AI 优先级对齐 ✅ 2026-06-23
 
 两个修复/改进：
