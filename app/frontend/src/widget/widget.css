@@ -1,0 +1,232 @@
+/* 组件窗口样式。窗口本身透明(macOSPrivateApi),卡片用不透明圆角底板填满,
+   即便打包后透明失效也只是底色,不露穿帮的白角。 */
+
+/* 覆盖 index.css 把 body 焊成白底——组件窗口要透明 */
+html,
+body,
+#widget-root {
+  height: 100%;
+  margin: 0;
+  background: transparent !important;
+}
+
+#widget-root {
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ---- 主卡片外壳 ---- */
+.wg-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--canvas);
+  border: 0.5px solid var(--hairline-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+.wg-shell--docked {
+  /* 悬停滑出时:右下加重投影,强调它「浮」在工作窗之上 */
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+}
+
+/* ---- 头部:拖动区 + 分段 + 打开主窗口 ---- */
+.wg-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 0.5px solid var(--hairline);
+  cursor: grab;
+}
+.wg-head:active {
+  cursor: grabbing;
+}
+.wg-seg {
+  display: inline-flex;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+.wg-seg-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.wg-seg-btn.is-on {
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.wg-open {
+  border: none;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.wg-open:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+/* ---- 主体 ---- */
+.wg-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.wg-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+}
+
+/* ---- 分组(今/明/后)---- */
+.wg-group {
+  margin-top: var(--sp-2);
+}
+.wg-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 2px 2px 4px;
+}
+.wg-group-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+}
+.wg-group-date {
+  font-weight: 500;
+  color: var(--ink-tertiary);
+  letter-spacing: 0;
+}
+.wg-group-n {
+  color: var(--ink-tertiary);
+  font-weight: 600;
+}
+.wg-group-empty {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  padding: 2px 4px 6px;
+}
+
+/* ---- 单行任务 ---- */
+.wg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+}
+.wg-row:hover {
+  background: var(--surface);
+}
+.wg-check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hairline-strong);
+  background: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wg-check:hover {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+.wg-row-title {
+  flex: 1 1 auto;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wg-row-pri {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.wg-row-due {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.wg-row-due--overdue {
+  color: var(--pri-urgent);
+}
+.wg-row-due--soon {
+  color: var(--pri-high);
+}
+
+/* ---- 占位 ---- */
+.wg-empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  color: var(--ink-tertiary);
+  font-size: 13px;
+  padding: var(--sp-5);
+}
+
+/* ---- 收起态:图片完全填充窗口并裁成正圆(裁掉图片四角,无论黑/透明)---- */
+.wg-ball {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  display: block;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.28));
+  transition: transform 0.16s;
+}
+.wg-ball:hover {
+  transform: scale(1.05);
+}
+.wg-ball img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* ---- 头部动作区 ---- */
+.wg-head-actions {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 2px;
+}
+.wg-sliver-dot {
+  width: 3px;
+  height: 28px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+}

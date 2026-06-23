@@ -12,6 +12,7 @@ import { SettingsModal } from "./components/SettingsModal";
 import { Onboarding } from "./components/Onboarding";
 import { useSettings } from "./store/useTasks";
 import { clearChat, useChatMessages } from "./store/chatStore";
+import { isWidgetEnabled, showWidget } from "./lib/widgetWindow";
 
 const VIEW_TITLE: Record<ViewKey, string> = {
   chat: "对话",
@@ -27,6 +28,11 @@ export default function App() {
 
   useEffect(() => {
     waitForHealth().then(setReady);
+  }, []);
+
+  // 启动自恢复:上次开着悬浮窗则自动显示。
+  useEffect(() => {
+    if (isWidgetEnabled()) void showWidget();
   }, []);
 
   // 后端就绪后才拉设置，用于判断是否需要首启引导。

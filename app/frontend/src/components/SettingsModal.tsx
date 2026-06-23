@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "../store/useTasks";
 import { CLAUDE_PAUSED } from "../lib/env";
+import { isWidgetEnabled, showWidget, hideWidget } from "../lib/widgetWindow";
 
 /** DeepSeek 当前生产模型（V4 系列，1M 上下文，OpenAI 兼容）。
  *  旧别名 deepseek-chat / deepseek-reasoner 官方将于 2026/07/24 停用，故不再列出。 */
@@ -19,6 +20,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [model, setModel] = useState("deepseek-v4-flash");
   const [apiKey, setApiKey] = useState("");
   const [language, setLanguage] = useState("zh");
+  // 悬浮窗开关:本地窗口偏好,即时生效(不随「保存」按钮)。
+  const [widgetOn, setWidgetOn] = useState(isWidgetEnabled());
+  const toggleWidget = () => {
+    const next = !widgetOn;
+    setWidgetOn(next);
+    void (next ? showWidget() : hideWidget());
+  };
 
   // 拉到设置后回填（apiKey 不回显，仅用 hasDeepseekKey 提示）
   useEffect(() => {
@@ -47,14 +55,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={submit}>
       <div className="modal-card modal-card--lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
             <div className="modal-title">设置</div>
             <div className="modal-sub">模型与语言偏好，存于本机</div>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="关闭">
+          <button className="modal-close" onClick={submit} aria-label="完成" title="保存并关闭">
             ×
           </button>
         </div>
@@ -118,6 +126,25 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
 
+          {/* 悬浮窗 */}
+          <div className="set-group">
+            <div className="set-row">
+              <div>
+                <div className="set-label">悬浮窗</div>
+                <div className="set-hint">桌面常驻的任务悬浮球,拖到边缘吸附,移上去展开</div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={widgetOn}
+                className={`switch${widgetOn ? " switch--on" : ""}`}
+                onClick={toggleWidget}
+              >
+                <span className="switch-knob" />
+              </button>
+            </div>
+          </div>
+
           {/* 语言 */}
           <div className="set-group">
             <div className="set-label">语言</div>
@@ -132,14 +159,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="modal-foot">
-          <button className="btn-ghost" onClick={onClose}>
-            取消
-          </button>
-          <button className="btn-primary" onClick={submit} disabled={save.isPending}>
-            {save.isPending ? "保存中…" : "保存"}
-          </button>
-        </div>
       </div>
     </div>
   );
