@@ -213,8 +213,23 @@ export function ChatPanel() {
             <div className="chat-empty-sub">你说一句，剩下的交给我</div>
           </div>
         ) : (
-          messages.map((m) =>
-            m.role === "user" ? (
+          messages.map((m, i) => {
+            if (m.role !== "user") {
+              return (
+                <AiMessage
+                  key={m.id}
+                  m={m}
+                  liveById={liveById}
+                  onRetry={() => setRegen({ kind: "retry", assistantId: m.id })}
+                  onDelete={() => setDelAiId(m.id)}
+                />
+              );
+            }
+            // 用户气泡对应的 AI 回复（紧随其后那条），用于在用户气泡下也显示版本切换
+            const nextAi = messages[i + 1];
+            const verAi =
+              nextAi && nextAi.role === "assistant" && !nextAi.pending ? nextAi : undefined;
+            return (
               <div key={m.id} className="msg msg--user">
                 <div className="msg-col">
                   {editingId === m.id ? (
@@ -272,6 +287,7 @@ export function ChatPanel() {
                         {m.text}
                       </div>
                       <div className="msg-actions">
+                        {verAi && <VersionSwitch m={verAi} />}
                         <button
                           className="msg-act"
                           title="复制"
@@ -301,16 +317,8 @@ export function ChatPanel() {
                   )}
                 </div>
               </div>
-            ) : (
-              <AiMessage
-                key={m.id}
-                m={m}
-                liveById={liveById}
-                onRetry={() => setRegen({ kind: "retry", assistantId: m.id })}
-                onDelete={() => setDelAiId(m.id)}
-              />
-            ),
-          )
+            );
+          })
         )}
       </div>
 
@@ -372,6 +380,36 @@ export function ChatPanel() {
   );
 }
 
+/** 历史版本切换器「‹ n/m ›」：仅当对应 assistant 消息有多版本时显示。 */
+function VersionSwitch({ m }: { m: import("../store/chatStore").ChatMsg }) {
+  const versions = m.versions ?? [];
+  if (versions.length <= 1) return null;
+  const active = m.activeVersion ?? 0;
+  return (
+    <span className="ver-switch">
+      <button
+        className="ver-arrow"
+        disabled={active <= 0}
+        onClick={() => setVersion(m.id, active - 1)}
+        aria-label="上一版"
+      >
+        ‹
+      </button>
+      <span className="ver-idx">
+        {active + 1}/{versions.length}
+      </span>
+      <button
+        className="ver-arrow"
+        disabled={active >= versions.length - 1}
+        onClick={() => setVersion(m.id, active + 1)}
+        aria-label="下一版"
+      >
+        ›
+      </button>
+    </span>
+  );
+}
+
 /** 单条 AI 回复：转圈 / 任务卡 + 操作栏（重试 + 版本切换）/ 纯文本（出错）。 */
 function AiMessage({
   m,
@@ -399,8 +437,6 @@ function AiMessage({
   const av = activeVersionOf(m);
   if (av) {
     const tasks = av.tasks;
-    const versions = m.versions ?? [];
-    const active = m.activeVersion ?? 0;
     const lead = av.degraded
       ? "AI 暂时不可用，已先记下，请在设置中配置模型。"
       : tasks.length > 1
@@ -416,29 +452,7 @@ function AiMessage({
             ))}
           </div>
           <div className="msg-actions">
-            {versions.length > 1 && (
-              <span className="ver-switch">
-                <button
-                  className="ver-arrow"
-                  disabled={active <= 0}
-                  onClick={() => setVersion(m.id, active - 1)}
-                  aria-label="上一版"
-                >
-                  ‹
-                </button>
-                <span className="ver-idx">
-                  {active + 1}/{versions.length}
-                </span>
-                <button
-                  className="ver-arrow"
-                  disabled={active >= versions.length - 1}
-                  onClick={() => setVersion(m.id, active + 1)}
-                  aria-label="下一版"
-                >
-                  ›
-                </button>
-              </span>
-            )}
+            <VersionSwitch m={m} />
             <button className="msg-act" title="重试" aria-label="重试" onClick={onRetry}>
               <IconRetry />
             </button>
