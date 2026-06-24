@@ -24,6 +24,7 @@ for (const [path, url] of Object.entries(OVERLAY_MODULES)) {
 }
 const OVERLAY_NAMES = Object.keys(OVERLAY_URLS); // 稳定文件名，用于持久化（不存带 hash 的 URL）
 const DONES_KEY = "taskdeck.calendar.dones"; // { "YYYY-MM-DD": 图片文件名 }
+const MEMOS_KEY = "taskdeck.calendar.memos"; // { "YYYY-MM-DD": 备忘文本 }
 
 const PRI_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
 const RANK_NAME = ["low", "medium", "high", "urgent"] as const;
@@ -82,8 +83,37 @@ export function CalendarView() {
     .filter((t) => t.due_date === selKey || t.scheduled_date === selKey)
     .sort((a, b) => (a.due_time ?? "99:99").localeCompare(b.due_time ?? "99:99"));
 
+  // ===== 日期备忘录（随选中日期切换，存 localStorage，与「完成日映射」同处） =====
+  const [memos, setMemos] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(MEMOS_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  });
+  // 写入当前选中日期的备忘：空白则删除该键，避免留空串
+  const setMemo = (text: string) => {
+    setMemos((prev) => {
+      const next = { ...prev };
+      if (text.trim()) next[selKey] = text;
+      else delete next[selKey];
+      try {
+        localStorage.setItem(MEMOS_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   const shiftMonth = (delta: number) =>
     setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
+  // 跳回今天：把月份切到当月并选中今天
+  const goToday = () => {
+    const t = new Date();
+    setMonth(new Date(t.getFullYear(), t.getMonth(), 1));
+    setSelected(t);
+  };
   const setYear = (y: number) => {
     if (Number.isFinite(y) && y >= 1970 && y <= 9999)
       setMonth(new Date(y, month.getMonth(), 1));
@@ -212,6 +242,7 @@ export function CalendarView() {
           </div>
         </div>
 
+        <div className="cal-grid-wrap">
         <DayPicker
           mode="single"
           locale={zhCN}
@@ -237,6 +268,21 @@ export function CalendarView() {
           }}
           showOutsideDays
         />
+        <div className="cal-today-bar">
+          <button className="cal-today" onClick={goToday}>
+            回到今天
+          </button>
+        </div>
+        </div>
+        <div className="cal-memo">
+          <div className="cal-memo-label">当日小记 · {prettyDate(selKey)}</div>
+          <textarea
+            className="cal-memo-input"
+            value={memos[selKey] ?? ""}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="记下这天的想法…"
+          />
+        </div>
       </div>
       <div className="cal-day">
         <h3 className="cal-day-title">{prettyDate(selKey)}</h3>
