@@ -242,9 +242,13 @@
   max-width: 760px;
   margin: 0 auto var(--sp-4);
 }
-/* 最后一条不要额外底距：底部由操作栏占位 + chat-stream 小 padding 收口 */
+/* 最后一条带操作栏时不要额外底距：底部由操作栏占位 + chat-stream 小 padding 收口 */
 .msg:last-child {
   margin-bottom: 0;
+}
+/* 但无操作栏的结尾（AI 转圈 typing / 纯文本出错）没有占位，补回底距，避免贴输入框过近 */
+.msg:last-child:not(:has(.msg-actions)) {
+  margin-bottom: var(--sp-4);
 }
 .msg--user {
   justify-content: flex-end;
