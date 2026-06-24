@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ConfirmModal } from "./ConfirmModal";
 import type { Task, Priority } from "../types";
 import { PRIORITY_LABEL, PRIORITY_VAR, prettyDate, dueTone } from "../lib/format";
 import { isImminent } from "../lib/deadline";
@@ -23,6 +24,7 @@ export function TaskItem({
   const imminent = !done && isImminent(task, now);
 
   const [editing, setEditing] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false); // 归档二次确认
   const [title, setTitle] = useState(task.title);
   const [notes, setNotes] = useState(task.notes ?? "");
   const [editTags, setEditTags] = useState<string[]>(tags);
@@ -360,12 +362,23 @@ export function TaskItem({
       {!hideArchive && !editing && (
         <button
           className="task-del"
-          onClick={() => del.mutate(task.id)}
+          onClick={() => setConfirmArchive(true)}
           aria-label="归档"
           title="归档"
         >
           ×
         </button>
+      )}
+
+      {confirmArchive && (
+        <ConfirmModal
+          title="归档任务"
+          message={`「归档」会把这条任务移到「全部任务」页面中的「已完成任务」，可在那里恢复或永久删除。确定归档「${task.title}」？`}
+          confirmText="归档"
+          danger
+          onConfirm={() => del.mutate(task.id)}
+          onClose={() => setConfirmArchive(false)}
+        />
       )}
     </div>
   );

@@ -16,6 +16,7 @@ import { Onboarding } from "./components/Onboarding";
 import { useSettings } from "./store/useTasks";
 import { clearChat, useChatMessages } from "./store/chatStore";
 import { isWidgetEnabled, showWidget } from "./lib/widgetWindow";
+import { attachSelectionConfine } from "./lib/confineSelection";
 
 const VIEW_TITLE: Record<ViewKey, string> = {
   chat: "对话",
@@ -49,6 +50,9 @@ export default function App() {
   useEffect(() => {
     if (isWidgetEnabled()) void showWidget();
   }, []);
+
+  // 文本选区收束在单张卡片/气泡内：只能复制单卡文字，不能跨卡片、不带空行。
+  useEffect(() => attachSelectionConfine(), []);
 
   // 菜单栏托盘的「进入XX」→ Rust emit navigate 事件，这里切换到对应视图。
   useEffect(() => {

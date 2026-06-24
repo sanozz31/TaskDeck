@@ -27,6 +27,10 @@ export function useCompletedTasks() {
   return useQuery({ queryKey: ["tasks", "completed"], queryFn: () => api.completed() });
 }
 
+export function useArchivedTasks() {
+  return useQuery({ queryKey: ["tasks", "archived"], queryFn: () => api.archived() });
+}
+
 export function useTags() {
   return useQuery({ queryKey: ["tags"], queryFn: () => api.tags() });
 }

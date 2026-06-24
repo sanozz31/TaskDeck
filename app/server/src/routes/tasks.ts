@@ -4,6 +4,7 @@ import type { Analysis } from "../ai/schema.js";
 import { clearAllData } from "../db.js";
 import {
   archiveTask,
+  hardDeleteTask,
   createTask,
   listCompleted,
   listTags,
@@ -185,9 +186,10 @@ tasksRouter.delete("/tasks/clear-all", (_req, res) => {
   res.json({ ok: true });
 });
 
-/** DELETE /tasks/:id —— 软删（归档）。 */
+/** DELETE /tasks/:id —— 默认软删（归档）；带 ?hard=1 则硬删（彻底删除，不可恢复）。 */
 tasksRouter.delete("/tasks/:id", (req, res) => {
-  const ok = archiveTask(req.params.id);
+  const hard = req.query.hard === "1" || req.query.hard === "true";
+  const ok = hard ? hardDeleteTask(req.params.id) : archiveTask(req.params.id);
   if (!ok) return res.status(404).json({ error: "任务不存在" });
   res.json({ ok: true });
 });

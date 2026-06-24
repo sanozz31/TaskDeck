@@ -17,7 +17,7 @@
 .app :where(p, h1, h2, h3, h4, h5, h6, span, li, td, th, label, strong, em, b, i,
     input, textarea, div:not(:has(*)),
     .task-title, .task-notes, .task-tag, .task-due,
-    .bubble, .dl-title, .chat-empty-title, .chat-empty-sub) {
+    .dl-title, .chat-empty-title, .chat-empty-sub) {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -261,6 +261,8 @@
   background: var(--bubble-user);
   color: var(--on-accent);
   border-bottom-right-radius: 5px;
+  /* 选择行为沿用全局策略：.app 默认 user-select:none，纯文字叶子 div 才放开
+     （div:not(:has(*))），故框选只取文字本身、不带布局空白与空行。此处不单独覆盖。 */
 }
 .bubble--ai {
   background: var(--bubble-ai);
@@ -357,6 +359,20 @@
   background: var(--hairline-strong);
   cursor: default;
 }
+/* 分析中：发送键变暂停键（两竖条），点击中断 */
+.chat-send--stop {
+  background: var(--accent);
+  cursor: pointer;
+}
+.chat-send-pause {
+  display: inline-block;
+  width: 11px;
+  height: 12px;
+  border-left: 3.5px solid #fff;
+  border-right: 3.5px solid #fff;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
 
 /* ===== 任务卡片 ===== */
 .task-list {
@@ -365,6 +381,7 @@
   gap: var(--sp-2);
 }
 .task-card {
+  position: relative; /* 右上角 × 的定位基准 */
   display: flex;
   align-items: flex-start;
   gap: var(--sp-3);
@@ -416,6 +433,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-2);
+  padding-right: 22px; /* 给右上角 × 让位，避免优先级标签被盖住 */
 }
 .task-title {
   font-weight: 550;
@@ -461,8 +479,12 @@
 .task-due--overdue {
   color: var(--pri-urgent);
 }
+/* × 固定在卡片右上角，右/上各留一点点间距；不挤占内容列 */
 .task-del {
-  flex: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
   width: 22px;
   height: 22px;
   border: none;
@@ -1524,6 +1546,49 @@
   justify-content: center;
   padding: var(--sp-4);
 }
+/* 二次确认浮在其它弹窗（如「已完成」）之上 */
+.modal-overlay--confirm {
+  z-index: 100;
+}
+
+/* ===== 对话气泡右键 / 长按上下文菜单 ===== */
+.ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 111;
+  min-width: 104px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-pop);
+}
+.ctx-item {
+  display: block;
+  width: 100%;
+  text-align: center;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13.5px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.ctx-item:hover {
+  background: var(--surface-hover);
+}
+.ctx-item--danger {
+  color: var(--pri-urgent);
+}
+.ctx-item--danger:hover {
+  background: rgba(255, 59, 48, 0.08);
+}
 .modal-card {
   background: var(--canvas);
   border-radius: var(--radius-lg);
@@ -1589,6 +1654,39 @@
   border-top: 1px solid var(--hairline);
 }
 /* 已完成弹窗:底部清理栏(灰线隔开、按钮居中) */
+/* ===== 已完成弹窗内的卡片列：合并一列（已完成在上、已归档在下），无分隔线 ===== */
+.archived-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.task-card--archived {
+  opacity: 0.85;
+}
+/* 右侧成组：把截止时间 + 恢复按钮整体推到 meta 行右端，日期右对齐贴近按钮 */
+.task-tail {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.task-restore {
+  flex: none;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.task-restore:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 .completed-clearbar {
   flex: none;
   display: flex;

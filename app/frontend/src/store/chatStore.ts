@@ -61,6 +61,11 @@ export function clearChat() {
   setMsgs([]);
 }
 
+/** 删除一条对话消息（按 id）。仅删对话记录，不影响已登记的后台任务。 */
+export function removeChatMessage(id: string) {
+  setMsgs(msgs.filter((m) => m.id !== id));
+}
+
 /**
  * 用实时任务数据持续刷新对话快照（按 updated_at 判定是否变化）。
  * 目的：任务一旦被归档而脱离实时列表，快照里已存着它最后一刻的完整状态，
@@ -88,6 +93,14 @@ export function reconcileChatTasks(byId: Map<string, Task>) {
   if (changed) setMsgs(next);
 }
 
+// 当前在途请求的中断器（供 ESC 中断分析）。
+let currentAbort: AbortController | null = null;
+
+/** 中断正在进行的 AI 分析（若有）。移除转圈气泡，保留用户那条输入。 */
+export function abortSubmit() {
+  currentAbort?.abort();
+}
+
 /**
  * 提交一句任务。整个请求脱离 React 组件生命周期：
  * 即使用户切到别的视图、ChatPanel 被卸载，AI 结果回来后仍会写入 store。
@@ -102,8 +115,10 @@ export async function submitTask(input: string, onSettled?: () => void): Promise
     { id: pendingId, role: "assistant", pending: true },
   ]);
 
+  const ac = new AbortController();
+  currentAbort = ac;
   try {
-    const res = await api.createTask(text);
+    const res = await api.createTask(text, ac.signal);
     setMsgs(
       msgs.map((m) =>
         m.id === pendingId
@@ -112,6 +127,11 @@ export async function submitTask(input: string, onSettled?: () => void): Promise
       ),
     );
   } catch (e) {
+    // 用户中断：去掉转圈气泡，不留报错
+    if (ac.signal.aborted || (e as Error).name === "AbortError") {
+      setMsgs(msgs.filter((m) => m.id !== pendingId));
+      return;
+    }
     setMsgs(
       msgs.map((m) =>
         m.id === pendingId
@@ -120,6 +140,7 @@ export async function submitTask(input: string, onSettled?: () => void): Promise
       ),
     );
   } finally {
+    if (currentAbort === ac) currentAbort = null;
     onSettled?.();
   }
 }

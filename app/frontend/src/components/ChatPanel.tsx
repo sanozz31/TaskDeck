@@ -1,7 +1,14 @@
 import { useRef, useState, useEffect, useLayoutEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaskItem } from "./TaskItem";
-import { useChatMessages, submitTask, reconcileChatTasks } from "../store/chatStore";
+import {
+  useChatMessages,
+  submitTask,
+  reconcileChatTasks,
+  removeChatMessage,
+  abortSubmit,
+} from "../store/chatStore";
 import { useAllTasks } from "../store/useTasks";
 import { DeadlineTimeline } from "./DeadlineTimeline";
 import { notifyTasksChanged } from "../lib/channel";
@@ -15,7 +22,17 @@ let savedScrollTop: number | null = null;
 
 export function ChatPanel() {
   const [input, setInput] = useState(() => localStorage.getItem(DRAFT_KEY) ?? "");
+  // 用户气泡右键 / 长按菜单：{屏幕坐标, 消息 id, 文本}
+  const [menu, setMenu] = useState<{ x: number; y: number; id: string; text: string } | null>(null);
+  const longPress = useRef<ReturnType<typeof setTimeout>>(undefined);
   const messages = useChatMessages();
+
+  const openMenu = (x: number, y: number, id: string, text: string) =>
+    setMenu({ x, y, id, text });
+  const copyText = (text: string) => {
+    void navigator.clipboard?.writeText(text).catch(() => {});
+    setMenu(null);
+  };
   const qc = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -81,8 +98,17 @@ export function ChatPanel() {
     });
   };
 
+  const hasPending = messages.some((m) => m.pending);
+
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // 分析进行中：ESC 中断
+    if (e.key === "Escape" && hasPending) {
+      e.preventDefault();
+      abortSubmit();
+      return;
+    }
+    // 输入法选字 / 组合输入中按回车：只确认候选，不发送（isComposing 守卫）
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
     }
@@ -97,6 +123,13 @@ export function ChatPanel() {
       <div
         className="chat-stream"
         ref={scrollRef}
+        onMouseDown={(e) => {
+          // 双击/三击会选词/选段：整条对话流统一拦掉（编辑输入框除外，那里要保留选词）。
+          // 单击拖拽（detail===1）不受影响，正常框选。
+          if (e.detail > 1 && !(e.target as HTMLElement).closest("input, textarea")) {
+            e.preventDefault();
+          }
+        }}
         onScroll={(e) => {
           savedScrollTop = e.currentTarget.scrollTop;
         }}
@@ -112,7 +145,29 @@ export function ChatPanel() {
           messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="msg msg--user">
-                <div className="bubble bubble--user">{m.text}</div>
+                <div
+                  className="bubble bubble--user"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    openMenu(e.clientX, e.clientY, m.id, m.text ?? "");
+                  }}
+                  onMouseDown={(e) => {
+                    // 双击/三击会选词/选段：拦掉这一下；单击拖拽（detail===1）不受影响，正常框选
+                    if (e.detail > 1) e.preventDefault();
+                  }}
+                  onTouchStart={(e) => {
+                    const t = e.touches[0];
+                    const { clientX, clientY } = t;
+                    longPress.current = setTimeout(
+                      () => openMenu(clientX, clientY, m.id, m.text ?? ""),
+                      450,
+                    );
+                  }}
+                  onTouchEnd={() => clearTimeout(longPress.current)}
+                  onTouchMove={() => clearTimeout(longPress.current)}
+                >
+                  {m.text}
+                </div>
               </div>
             ) : (
               <div key={m.id} className="msg msg--ai">
@@ -132,7 +187,7 @@ export function ChatPanel() {
                           : "已登记 ✓"}
                     </div>
                     {(m.tasks ?? (m.task ? [m.task] : [])).map((t) => (
-                      <TaskItem key={t.id} task={liveById.get(t.id) ?? t} hideArchive />
+                      <TaskItem key={t.id} task={liveById.get(t.id) ?? t} />
                     ))}
                   </div>
                 ) : (
@@ -149,22 +204,54 @@ export function ChatPanel() {
           <textarea
             ref={inputRef}
             className="chat-input"
-            placeholder="有任务，立即安排"
+            placeholder={
+              hasPending ? "正在分析…按 ESC 或点击右侧暂停按钮中断" : "有任务，立即安排"
+            }
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKey}
           />
           <button
-            className="chat-send"
-            onClick={() => submit()}
-            disabled={!input.trim()}
-            aria-label="发送"
+            className={`chat-send${hasPending ? " chat-send--stop" : ""}`}
+            onClick={() => (hasPending ? abortSubmit() : submit())}
+            disabled={hasPending ? false : !input.trim()}
+            aria-label={hasPending ? "暂停（中断分析）" : "发送"}
+            title={hasPending ? "暂停（中断分析）" : "发送"}
           >
-            ↑
+            {hasPending ? <span className="chat-send-pause" /> : "↑"}
           </button>
         </div>
       </div>
+
+      {menu &&
+        createPortal(
+          <>
+            <div
+              className="ctx-backdrop"
+              onMouseDown={() => setMenu(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setMenu(null);
+              }}
+            />
+            <div className="ctx-menu" style={{ top: menu.y, left: menu.x }}>
+              <button className="ctx-item" onClick={() => copyText(menu.text)}>
+                复制
+              </button>
+              <button
+                className="ctx-item ctx-item--danger"
+                onClick={() => {
+                  removeChatMessage(menu.id);
+                  setMenu(null);
+                }}
+              >
+                删除
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }

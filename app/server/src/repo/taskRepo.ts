@@ -192,6 +192,12 @@ export function archiveTask(id: string): boolean {
   return info.changes > 0;
 }
 
+/** 硬删：从库中彻底删除单条任务（用于「已归档」里永久删除某张卡片，不可恢复）。 */
+export function hardDeleteTask(id: string): boolean {
+  const info = getDb().prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
+  return info.changes > 0;
+}
+
 /** 已完成任务列表，按完成时间倒序（最近完成在前），供「已完成」弹窗使用。 */
 export function listCompleted(): Task[] {
   const rows = getDb()

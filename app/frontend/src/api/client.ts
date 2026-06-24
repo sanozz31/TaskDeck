@@ -87,10 +87,11 @@ export async function waitForHealth(timeoutMs = 15000): Promise<boolean> {
 }
 
 export const api = {
-  createTask: (input: string) =>
+  createTask: (input: string, signal?: AbortSignal) =>
     req<{ tasks: Task[]; degraded: boolean }>("/tasks", {
       method: "POST",
       body: JSON.stringify({ input }),
+      signal,
     }),
 
   listTasks: (params: Record<string, string> = {}) => {
@@ -144,6 +145,14 @@ export const api = {
 
   deleteTask: (id: string) =>
     req<{ ok: boolean }>(`/tasks/${id}`, { method: "DELETE" }),
+
+  /** 永久删除（硬删，不可恢复）——用于「已归档」里删除具体某张卡片。 */
+  purgeTask: (id: string) =>
+    req<{ ok: boolean }>(`/tasks/${id}?hard=1`, { method: "DELETE" }),
+
+  /** 已归档任务列表（软删后进入此态，可恢复或永久删除）。 */
+  archived: () =>
+    req<{ tasks: Task[] }>(`/tasks?status=archived`).then((r) => r.tasks),
 
   clearAllData: () =>
     req<{ ok: boolean }>(`/tasks/clear-all`, { method: "DELETE" }),

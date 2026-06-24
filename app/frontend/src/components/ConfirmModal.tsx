@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
-/** 通用确认弹窗：复用 modal 视觉，破坏性操作可标 danger（红色确认按钮）。 */
+/** 通用确认弹窗：复用 modal 视觉，破坏性操作可标 danger（红色确认按钮）。
+ *  用 portal 渲染到 body 顶层，避免被卡片（position:relative）的 DOM 层级盖住。 */
 export function ConfirmModal({
   title,
   message,
@@ -24,8 +26,8 @@ export function ConfirmModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  return createPortal(
+    <div className="modal-overlay modal-overlay--confirm" onClick={onClose}>
       <div
         className="modal-card modal-card--sm"
         onClick={(e) => e.stopPropagation()}
@@ -55,6 +57,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

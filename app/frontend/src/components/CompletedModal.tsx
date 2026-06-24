@@ -1,29 +1,46 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { TaskList } from "./TaskList";
 import { ConfirmModal } from "./ConfirmModal";
-import { useCompletedTasks } from "../store/useTasks";
+import { ArchivedCard } from "./ArchivedCard";
+import { useCompletedTasks, useArchivedTasks, useUpdateTask } from "../store/useTasks";
 import { api } from "../api/client";
 import { notifyTasksChanged } from "../lib/channel";
 
-/** 「已完成」弹窗：列出所有已完成任务，顶部注明 7 天自动清除，底部可一键清理全部。 */
+/**
+ * 「已完成」弹窗：不区分已完成 / 已归档，合并为一列——已完成在上、已归档在下。
+ * 每张卡片统一可**恢复**（→待办）或**永久删除**（硬删不可恢复）；底部可一键清理所有已完成。
+ */
 export function CompletedModal({ onClose }: { onClose: () => void }) {
-  const { data } = useCompletedTasks();
+  const { data: done } = useCompletedTasks();
+  const { data: archived } = useArchivedTasks();
+  // 合并为一列：已完成在上，已归档在下
+  const items = [...(done ?? []), ...(archived ?? [])];
+  const update = useUpdateTask();
   const qc = useQueryClient();
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(false); // 清理所有已完成
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+    qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
+    qc.invalidateQueries({ queryKey: ["tags"], exact: false });
+    notifyTasksChanged();
+  };
 
   const clearAll = useMutation({
     mutationFn: async () => {
-      const tasks = data ?? [];
+      const tasks = done ?? [];
       await Promise.all(tasks.map((t) => api.deleteTask(t.id)));
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
-      qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
-      qc.invalidateQueries({ queryKey: ["tags"], exact: false });
-      notifyTasksChanged();
-    },
+    onSuccess: invalidate,
   });
+
+  const purge = useMutation({
+    mutationFn: (id: string) => api.purgeTask(id),
+    onSuccess: invalidate,
+  });
+
+  // 拿回来：归档 → 待办（非破坏性，无需二次确认）
+  const restore = (id: string) => update.mutate({ id, patch: { status: "todo" } });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -33,7 +50,7 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const hasDone = (data?.length ?? 0) > 0;
+  const hasDone = (done?.length ?? 0) > 0;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -41,14 +58,27 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
         <div className="modal-head">
           <div>
             <div className="modal-title">已完成</div>
-            <div className="modal-sub">完成满 7 天将自动清除</div>
+            <div className="modal-sub">每条可恢复或永久删除；已完成满 7 天自动清除</div>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="关闭">
             ×
           </button>
         </div>
         <div className="modal-body">
-          <TaskList tasks={data} empty="还没有已完成的任务" />
+          {items.length === 0 ? (
+            <div className="hint">还没有已完成或归档的任务</div>
+          ) : (
+            <div className="archived-section">
+              {items.map((t) => (
+                <ArchivedCard
+                  key={t.id}
+                  task={t}
+                  onRestore={() => restore(t.id)}
+                  onPurge={() => purge.mutate(t.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {hasDone && (
@@ -67,7 +97,7 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
       {confirming && (
         <ConfirmModal
           title="清理所有已完成任务"
-          message={`将清理 ${data?.length ?? 0} 条已完成任务，操作不可撤销。`}
+          message={`将归档 ${done?.length ?? 0} 条已完成任务（之后可在「已归档」里恢复或永久删除）。`}
           confirmText="清理"
           danger
           onConfirm={() => clearAll.mutate()}
