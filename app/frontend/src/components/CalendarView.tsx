@@ -4,6 +4,7 @@ import { zhCN } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { useCalendar } from "../store/useTasks";
 import { TaskList } from "./TaskList";
+import { WheelSelect } from "./WheelSelect";
 import { prettyDate } from "../lib/format";
 import type { Priority, Task } from "../types";
 
@@ -184,31 +185,19 @@ export function CalendarView() {
       <div className="cal-pane">
         <div className="cal-head">
           <div className="cal-head-mid">
-            <select
-              className="cal-sel cal-sel--year"
+            <WheelSelect
               value={month.getFullYear()}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              aria-label="年"
-            >
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              options={yearOptions}
+              onChange={setYear}
+              ariaLabel="年"
+            />
             <span className="cal-num-unit">年</span>
-            <select
-              className="cal-sel"
+            <WheelSelect
               value={month.getMonth() + 1}
-              onChange={(e) => setMon(parseInt(e.target.value, 10))}
-              aria-label="月"
-            >
-              {MONTHS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+              options={MONTHS}
+              onChange={setMon}
+              ariaLabel="月"
+            />
             <span className="cal-num-unit">月</span>
           </div>
           <div className="cal-nav-group">

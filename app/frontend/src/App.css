@@ -852,26 +852,92 @@
   font-weight: 600;
   margin-left: var(--sp-2); /* 年月整体略向右挪一点 */
 }
-.cal-num {
-  -moz-appearance: textfield;
-  appearance: textfield;
-  width: 3.4em;
-  border: 1px solid transparent;
+
+/* ===== 年/月：点击数字弹出滚轮（WheelSelect）；触发数字复用 .cal-sel 旧样式 ===== */
+.wheelsel {
+  position: relative;
+  display: inline-block;
+}
+/* 透明遮罩：弹开时铺满全屏，点击只收起滚轮并拦住该次点击，不触达其他区域 */
+.wheelsel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
   background: transparent;
-  color: var(--ink);
-  font: inherit;
+}
+/* 弹层：浮在数字下方，盖在日历网格之上（z-index 高于遮罩，滚轮可操作）*/
+.wheelsel-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: 92px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-pop);
+}
+
+/* ===== 滚轮（WheelPicker，被 WheelSelect 弹层复用）===== */
+.wheel {
+  position: relative;
+  overflow: hidden;
+  /* 上下渐隐遮罩，凸显中心选中 */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+}
+.wheel-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+.wheel-scroll::-webkit-scrollbar {
+  display: none;
+}
+.wheel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 15px;
   font-weight: 600;
-  font-size: 16px;
-  text-align: center;
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-  transition: background 0.12s, border-color 0.12s;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  transition: color 0.12s;
+  white-space: nowrap;
 }
-.cal-num--year {
-  width: 4.2em;
+.wheel-item--on {
+  color: var(--accent);
 }
-/* 年 / 月下拉：沿用数字框的克制外观，去掉原生箭头，hover/focus 有底色反馈 */
+.wheel-pad {
+  flex: none;
+}
+.wheel-center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+/* 年 / 月数字触发：沿用数字框的克制外观，去掉原生箭头，hover/focus 有底色反馈 */
 .cal-sel {
+  position: relative;
+  top: 1px; /* 年/月数字微调下移 1px，与 年/月 汉字视觉对齐 */
   appearance: none;
   -webkit-appearance: none;
   border: 1px solid transparent;
@@ -894,20 +960,6 @@
   outline: none;
   background: var(--canvas);
   border-color: var(--accent);
-}
-.cal-num:hover {
-  background: var(--surface-hover);
-}
-.cal-num:focus {
-  outline: none;
-  background: var(--canvas);
-  border-color: var(--accent);
-}
-.cal-num::-webkit-outer-spin-button,
-.cal-num::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
 }
 .cal-num-unit {
   color: var(--ink-secondary);
@@ -1379,11 +1431,6 @@
     font-size: 20px;
   }
 
-  /* FAB 抬到 TabBar 之上，避免被底栏遮挡 */
-  .fab {
-    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--sp-3));
-  }
-
   /* 输入类控件 ≥16px，防 iOS 聚焦缩放 */
   .chat-input,
   .set-control {
@@ -1440,35 +1487,30 @@
   background: var(--accent-hover);
 }
 
-/* ===== 已完成：右下角浮动按钮 ===== */
-.fab {
-  position: fixed;
-  right: calc(var(--sp-5) + env(safe-area-inset-right, 0px));
-  bottom: calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
+/* ===== 已完成任务：全部任务页顶栏右侧按钮（灰线以上）===== */
+.topbar-completed {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  padding: 11px 18px;
-  border: none;
-  border-radius: 999px;
+  border: 1px solid var(--hairline);
   background: var(--canvas);
-  color: var(--ink);
-  font-size: 13.5px;
+  color: var(--ink-secondary);
+  font-size: 12.5px;
   font-weight: 500;
-  box-shadow: var(--shadow-pop);
-  transition: background 0.12s, transform 0.08s;
+  padding: 5px 12px;
+  margin-right: var(--sp-2);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-.fab::before {
+.topbar-completed::before {
   content: "✓";
   color: var(--ok);
   font-weight: 700;
 }
-.fab:hover {
+.topbar-completed:hover {
   background: var(--surface-hover);
-}
-.fab:active {
-  transform: scale(0.97);
 }
 
 /* ===== 弹窗（已完成）===== */

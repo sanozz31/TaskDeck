@@ -9,6 +9,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { CalendarView } from "./components/CalendarView";
 import { TagView } from "./components/TagView";
 import { AllTasks } from "./components/AllTasks";
+import { CompletedModal } from "./components/CompletedModal";
 import { Reminders } from "./components/Reminders";
 import { SettingsModal } from "./components/SettingsModal";
 import { Onboarding } from "./components/Onboarding";
@@ -27,6 +28,7 @@ export default function App() {
   const [view, setView] = useState<ViewKey>("chat");
   const [ready, setReady] = useState<boolean | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(false);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -113,6 +115,11 @@ export default function App() {
               清空对话
             </button>
           )}
+          {view === "all" && (
+            <button className="topbar-completed" onClick={() => setCompletedOpen(true)}>
+              已完成任务
+            </button>
+          )}
           <button
             className="topbar-settings"
             onClick={() => setSettingsOpen(true)}
@@ -134,6 +141,7 @@ export default function App() {
         </section>
       </main>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {completedOpen && <CompletedModal onClose={() => setCompletedOpen(false)} />}
     </div>
   );
 }

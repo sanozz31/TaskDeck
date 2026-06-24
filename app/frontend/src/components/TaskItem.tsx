@@ -143,7 +143,8 @@ export function TaskItem({
     setAddingTag(false);
   };
 
-  const onTitleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // 标题 / 截止日期 / 截止时刻输入框共用：Enter 保存、Esc 取消
+  const onFieldKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       saveEdit();
@@ -177,7 +178,8 @@ export function TaskItem({
         {done ? "✓" : ""}
       </button>
 
-      <div className="task-body">
+      {/* 非编辑态：双击卡片正文任意区域进入编辑（勾选框/归档按钮在 task-body 之外，不误触） */}
+      <div className="task-body" onDoubleClick={editing ? undefined : startEdit}>
         {editing ? (
           <div className="task-edit">
             <input
@@ -185,7 +187,7 @@ export function TaskItem({
               value={title}
               autoFocus
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={onTitleKey}
+              onKeyDown={onFieldKey}
               placeholder="任务标题"
             />
             <textarea
@@ -273,12 +275,14 @@ export function TaskItem({
                 className="task-edit-date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                onKeyDown={onFieldKey}
               />
               <input
                 type="time"
                 className="task-edit-time"
                 value={dueTime}
                 onChange={(e) => setDueTime(e.target.value)}
+                onKeyDown={onFieldKey}
               />
               {(dueDate || dueTime) && (
                 <button
@@ -308,7 +312,6 @@ export function TaskItem({
               <span className="task-title-main">
                 <span
                   className={`task-title${imminent ? " task-title--imminent" : ""}`}
-                  onDoubleClick={startEdit}
                   title="双击编辑"
                 >
                   {task.title}
@@ -332,7 +335,7 @@ export function TaskItem({
             </div>
 
             {task.notes && (
-              <div className="task-notes" onDoubleClick={startEdit} title="双击编辑">
+              <div className="task-notes" title="双击编辑">
                 {task.notes}
               </div>
             )}
