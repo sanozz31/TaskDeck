@@ -43,7 +43,7 @@ export function RegenConfirm({
           <button className="btn-ghost btn-ghost--danger" onClick={() => { onDrop(); onClose(); }}>
             删除此版
           </button>
-          <button className="btn-primary" onClick={() => { onKeep(); onClose(); }} autoFocus>
+          <button className="btn-primary" onClick={() => { onKeep(); onClose(); }}>
             保留此版
           </button>
         </div>

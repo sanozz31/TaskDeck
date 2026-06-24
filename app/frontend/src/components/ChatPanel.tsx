@@ -152,13 +152,17 @@ export function ChatPanel() {
 
   const hasPending = messages.some((m) => m.pending);
 
+  // 分析进行中：只要焦点在窗口内，按 ESC 即可中断（不必先聚焦输入框）。
+  useEffect(() => {
+    if (!hasPending) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") abortSubmit();
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [hasPending]);
+
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // 分析进行中：ESC 中断
-    if (e.key === "Escape" && hasPending) {
-      e.preventDefault();
-      abortSubmit();
-      return;
-    }
     // 输入法选字 / 组合输入中按回车：只确认候选，不发送（isComposing 守卫）
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
