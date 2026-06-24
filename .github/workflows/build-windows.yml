@@ -1,12 +1,10 @@
 name: Build Windows
 
 # Tauri 无法从 macOS 交叉编译到 Windows，故 Windows 安装包必须在 windows runner 上构建。
-# 手动触发，或推 v* tag 时自动构建。产物为 NSIS 安装包（.exe），上传为 artifact。
+# 仅手动触发（Actions 页面点 Run workflow），不再随 v* tag 自动构建——平时只发 macOS dmg，
+# 推 tag 不应白烧 Windows runner。需要 win 版时再手动跑。产物为 NSIS 安装包（.exe），上传为 artifact。
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   build-windows:
