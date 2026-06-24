@@ -331,7 +331,9 @@
   resize: none;
   font-size: 15px;
   line-height: 1.5;
-  max-height: 160px;
+  /* 最多四行：4 × 1.5em + 上下各 6px 内边距，超出后内部滚动 */
+  max-height: calc(1.5em * 4 + 12px);
+  overflow-y: auto;
   padding: 6px 0;
   background: transparent;
   color: var(--ink);
@@ -480,6 +482,253 @@
   color: var(--pri-urgent);
 }
 
+/* 标题 + 编辑铅笔：左侧成组，标题可省略，铅笔紧随其后 */
+.task-title-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+.task-edit-trigger {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: 1px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.task-card:hover .task-edit-trigger {
+  opacity: 0.9;
+}
+.task-edit-trigger:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+/* ===== 任务卡片：行内编辑 ===== */
+.task-card--editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.task-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.task-edit-title,
+.task-edit-notes {
+  width: 100%;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.task-edit-title {
+  font-size: 14.5px;
+  font-weight: 550;
+  padding: 6px 8px;
+}
+.task-edit-notes {
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 6px 8px;
+  resize: none;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.task-edit-title:focus,
+.task-edit-notes:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+/* 标签编辑：已选标签 chip + 内联输入 */
+.task-edit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.task-edit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.task-edit-chip-del {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.65;
+  transition: opacity 0.12s, background 0.12s;
+}
+.task-edit-chip-del:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.08);
+}
+/* 新建标签：虚线圈 + 号 */
+.task-edit-tag-add {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 13px;
+  line-height: 1;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.task-edit-tag-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+/* 新建标签：展开后的输入框（初始约四个字宽，文本居中） */
+.task-edit-tag-input {
+  width: calc(4em + 16px);
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  outline: none;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 11.5px;
+  line-height: 1.4;
+  padding: 1px 8px;
+  text-align: center;
+}
+.task-edit-sug {
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 11.5px;
+  line-height: 1.5;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.task-edit-sug:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* 优先级 / 截止时间编辑行 */
+.task-edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.task-edit-label {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+}
+.task-edit-pris {
+  display: flex;
+  gap: 6px;
+}
+.task-edit-pri {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  background: var(--canvas);
+  color: var(--ink-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.task-edit-pri-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.task-edit-pri--on {
+  background: var(--accent-soft);
+  font-weight: 550;
+}
+.task-edit-date,
+.task-edit-time {
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 8px;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.task-edit-date:focus,
+.task-edit-time:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.task-edit-clear {
+  border: none;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 11.5px;
+  padding: 2px 4px;
+  transition: color 0.12s;
+}
+.task-edit-clear:hover {
+  color: var(--pri-urgent);
+}
+
+.task-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+.task-edit-btn {
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm, 8px);
+  padding: 4px 12px;
+  font-size: 12.5px;
+  background: var(--canvas);
+  color: var(--ink-secondary);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.task-edit-btn--cancel:hover {
+  background: var(--surface-hover);
+}
+.task-edit-btn--save {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.task-edit-btn--save:hover {
+  background: var(--accent-hover);
+}
+
 /* ===== 日历视图 ===== */
 .cal-view {
   flex: 1;
@@ -517,6 +766,9 @@
   --rdp-today-color: var(--accent);
   --rdp-outside-opacity: 1; /* 其他月：弱化全靠浅灰文字 #b0b0b5，不叠加透明度 */
   margin: 0;
+  /* 日历单元格禁止选中/复制 */
+  -webkit-user-select: none;
+  user-select: none;
 }
 .rdp-outside .rdp-day_button {
   color: #8e8e93; /* 其他月：中灰弱化、突出本月 */
@@ -767,7 +1019,7 @@
   gap: 4px;
 }
 .tag-add-input {
-  width: 88px;
+  width: calc(4em + 30px);
   border: 1px solid var(--hairline-strong);
   background: var(--canvas);
   color: var(--ink);
@@ -775,6 +1027,7 @@
   border-radius: 999px;
   font: inherit;
   font-size: 13px;
+  text-align: center;
   transition: border-color 0.12s;
 }
 .tag-add-input:focus {
@@ -1523,6 +1776,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+}
+/* 时间轴标题行内编辑输入框 */
+.dl-title-edit {
+  width: 120px;
+  font-size: 13px;
+  color: var(--ink);
+  border: none;
+  outline: none;
+  background: transparent;
+  border-bottom: 1px solid var(--accent);
+  padding: 0;
 }
 .dl-pill--overdue .dl-title,
 .dl-title--imminent {

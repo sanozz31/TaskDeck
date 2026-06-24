@@ -142,6 +142,8 @@ tasksRouter.delete("/tag-defs/:name", (req, res) => {
 tasksRouter.patch("/tasks/:id", (req, res) => {
   const updated = updateTask(req.params.id, req.body ?? {});
   if (!updated) return res.status(404).json({ error: "任务不存在" });
+  // 编辑时新增的标签并入标签库，使其在标签页可见（与创建任务一致）
+  if (Array.isArray(req.body?.tags)) ensureTagDefs(updated.tags);
   res.json({ task: updated });
 });
 

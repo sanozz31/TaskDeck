@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import "./App.css";
 import type { ViewKey } from "./types";
 import { waitForHealth } from "./api/client";
+import { onTasksChanged } from "./lib/channel";
 import { Sidebar } from "./components/Sidebar";
 import { ChatPanel } from "./components/ChatPanel";
 import { CalendarView } from "./components/CalendarView";
@@ -25,14 +27,40 @@ export default function App() {
   const [view, setView] = useState<ViewKey>("chat");
   const [ready, setReady] = useState<boolean | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const qc = useQueryClient();
 
   useEffect(() => {
     waitForHealth().then(setReady);
   }, []);
 
+  // 悬浮窗改了任务 → 广播过来，主窗口立即失效查询刷新（时间轴/对话/各列表页）。
+  // 与 Widget 侧的订阅对称；BroadcastChannel 不会把消息回投给发送方，无自循环。
+  useEffect(() => {
+    return onTasksChanged(() => {
+      qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
+      qc.invalidateQueries({ queryKey: ["tags"], exact: false });
+      qc.invalidateQueries({ queryKey: ["calendar"], exact: false });
+    });
+  }, [qc]);
+
   // 启动自恢复:上次开着悬浮窗则自动显示。
   useEffect(() => {
     if (isWidgetEnabled()) void showWidget();
+  }, []);
+
+  // 菜单栏托盘的「进入XX」→ Rust emit navigate 事件，这里切换到对应视图。
+  useEffect(() => {
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    let unlisten: (() => void) | undefined;
+    void import("@tauri-apps/api/event").then(({ listen }) =>
+      listen<string>("navigate", (e) => {
+        const v = e.payload as ViewKey;
+        if (v === "chat" || v === "calendar" || v === "tags" || v === "all") setView(v);
+      }).then((un) => {
+        unlisten = un;
+      }),
+    );
+    return () => unlisten?.();
   }, []);
 
   // 后端就绪后才拉设置，用于判断是否需要首启引导。

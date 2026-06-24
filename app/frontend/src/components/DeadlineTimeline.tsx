@@ -13,6 +13,94 @@ const DAYS = [
 ];
 const SPAN_DAYS = DAYS.length;
 
+type Task = NonNullable<ReturnType<typeof useAllTasks>["data"]>[number];
+
+/** 时间轴上的单个任务块：双击标题行内编辑（仅标题），勾选完成。 */
+function DlTask({
+  task,
+  now,
+  update,
+}: {
+  task: Task;
+  now: number;
+  update: ReturnType<typeof useUpdateTask>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // ref 守卫：Enter 保存后输入框卸载会再触发一次 blur，避免重复 mutate
+  const editingRef = useRef(false);
+
+  const startEdit = () => {
+    setTitle(task.title);
+    editingRef.current = true;
+    setEditing(true);
+    requestAnimationFrame(() => inputRef.current?.select());
+  };
+  const saveEdit = () => {
+    if (!editingRef.current) return;
+    editingRef.current = false;
+    const next = title.trim();
+    if (next && next !== task.title) update.mutate({ id: task.id, patch: { title: next } });
+    setEditing(false);
+  };
+  const cancelEdit = () => {
+    editingRef.current = false;
+    setTitle(task.title);
+    setEditing(false);
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
+  return (
+    <div className="dl-task" data-id={task.id}>
+      <div className="dl-time">{task.due_time || "全天"}</div>
+      <div
+        className={`dl-pill${dueTone(task.due_date) === "overdue" ? " dl-pill--overdue" : ""}`}
+      >
+        <span
+          className="dl-dot"
+          style={{ background: PRIORITY_VAR[task.priority] }}
+          title={`优先级 ${PRIORITY_LABEL[task.priority]}`}
+        />
+        {editing ? (
+          <input
+            ref={inputRef}
+            className="dl-title-edit"
+            value={title}
+            autoFocus
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={onKey}
+            onBlur={saveEdit}
+          />
+        ) : (
+          <span
+            className={`dl-title${isImminent(task, now) ? " dl-title--imminent" : ""}`}
+            onDoubleClick={startEdit}
+            title="双击编辑标题"
+          >
+            {task.title}
+          </span>
+        )}
+        <button
+          className="dl-check"
+          onClick={() => update.mutate({ id: task.id, patch: { status: "done" } })}
+          title="标记完成"
+          aria-label="标记完成"
+          disabled={editing}
+        />
+      </div>
+    </div>
+  );
+}
+
 /**
  * 对话页顶部 DDL 时间轴：任务按截止时刻横排成一行。
  * - 有任务处按任务块内容宽度自然撑开，块间固定最小间距；空白时间段不按比例占像素。
@@ -75,31 +163,7 @@ export function DeadlineTimeline() {
           </div>,
         );
       }
-      rows.push(
-        <div className="dl-task" data-id={t.id} key={t.id}>
-          <div className="dl-time">{t.due_time || "全天"}</div>
-          <div
-            className={`dl-pill${
-              dueTone(t.due_date) === "overdue" ? " dl-pill--overdue" : ""
-            }`}
-          >
-            <span
-              className="dl-dot"
-              style={{ background: PRIORITY_VAR[t.priority] }}
-              title={`优先级 ${PRIORITY_LABEL[t.priority]}`}
-            />
-            <span className={`dl-title${isImminent(t, now) ? " dl-title--imminent" : ""}`}>
-              {t.title}
-            </span>
-            <button
-              className="dl-check"
-              onClick={() => update.mutate({ id: t.id, patch: { status: "done" } })}
-              title="标记完成"
-              aria-label="标记完成"
-            />
-          </div>
-        </div>,
-      );
+      rows.push(<DlTask key={t.id} task={t} now={now} update={update} />);
     }
   } else {
     for (const d of DAYS) {

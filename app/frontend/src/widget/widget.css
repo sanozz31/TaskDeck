@@ -161,6 +161,18 @@ body,
   -webkit-user-select: text;
   user-select: text;
 }
+/* 悬浮窗标题行内编辑输入框 */
+.wg-row-edit {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+  border: none;
+  outline: none;
+  background: transparent;
+  border-bottom: 1px solid var(--accent);
+  padding: 0;
+}
 .wg-row-pri {
   flex: 0 0 auto;
   width: 7px;

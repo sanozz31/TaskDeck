@@ -26,3 +26,6 @@ app/server/data/
 # 编辑器
 .vscode/
 .idea/
+
+# 内部 PM 文档，不公开
+doc/doc-aipm/

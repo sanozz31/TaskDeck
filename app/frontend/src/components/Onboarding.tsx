@@ -40,8 +40,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     <div className="onboard">
       <div className="onboard-card">
         <div className="onboard-head">
-          <img className="onboard-logo" src="/favicon.png" alt="TaskDeck" />
-          <h1 className="onboard-title">欢迎使用 TaskDeck</h1>
+          <img className="onboard-logo" src="/favicon.png" alt="万事" />
+          <h1 className="onboard-title">欢迎使用万事</h1>
           <p className="onboard-sub">
             开始之前，先选一个负责解析任务的 AI 模型。之后可在设置里随时切换。
           </p>

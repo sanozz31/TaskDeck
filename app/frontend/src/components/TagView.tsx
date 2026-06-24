@@ -82,7 +82,7 @@ export function TagView() {
         <span className="tag-add">
           <input
             className="tag-add-input"
-            placeholder="新标签"
+            placeholder="新建标签"
             value={draft}
             maxLength={12}
             onChange={(e) => setDraft(e.target.value)}

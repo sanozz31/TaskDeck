@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { Task } from "../types";
 import { PRIORITY_LABEL, PRIORITY_VAR, prettyDate, dueTone } from "../lib/format";
 import { pickTimelineTasks, todayStr, dayStr, isImminent } from "../lib/deadline";
@@ -13,6 +14,42 @@ function WidgetRow({ task }: { task: Task }) {
   const update = useUpdateTask();
   const now = useNow();
   const imminent = isImminent(task, now);
+
+  // 双击标题行内编辑(仅标题)
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // ref 守卫：Enter 保存后输入框卸载会再触发一次 blur，避免重复 mutate
+  const editingRef = useRef(false);
+
+  const startEdit = () => {
+    setTitle(task.title);
+    editingRef.current = true;
+    setEditing(true);
+    requestAnimationFrame(() => inputRef.current?.select());
+  };
+  const saveEdit = () => {
+    if (!editingRef.current) return;
+    editingRef.current = false;
+    const next = title.trim();
+    if (next && next !== task.title) update.mutate({ id: task.id, patch: { title: next } });
+    setEditing(false);
+  };
+  const cancelEdit = () => {
+    editingRef.current = false;
+    setTitle(task.title);
+    setEditing(false);
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
   return (
     <div className="wg-row">
       <button
@@ -20,10 +57,27 @@ function WidgetRow({ task }: { task: Task }) {
         onClick={() => update.mutate({ id: task.id, patch: { status: "done" } })}
         aria-label="标记完成"
         title="标记完成"
+        disabled={editing}
       />
-      <span className={`wg-row-title${imminent ? " wg-row-title--imminent" : ""}`}>
-        {task.title}
-      </span>
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="wg-row-edit"
+          value={title}
+          autoFocus
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={onKey}
+          onBlur={saveEdit}
+        />
+      ) : (
+        <span
+          className={`wg-row-title${imminent ? " wg-row-title--imminent" : ""}`}
+          onDoubleClick={startEdit}
+          title="双击编辑标题"
+        >
+          {task.title}
+        </span>
+      )}
       <span
         className="wg-row-pri"
         style={{ background: PRIORITY_VAR[task.priority] }}

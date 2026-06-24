@@ -62,6 +62,33 @@ export function clearChat() {
 }
 
 /**
+ * 用实时任务数据持续刷新对话快照（按 updated_at 判定是否变化）。
+ * 目的：任务一旦被归档而脱离实时列表，快照里已存着它最后一刻的完整状态，
+ * 对话卡回退到快照时即「定格在最后一次状态」，而非退回创建时的旧值。
+ * 仅在确有变化时写入，避免轮询触发死循环。
+ */
+export function reconcileChatTasks(byId: Map<string, Task>) {
+  let changed = false;
+  const sync = (t: Task): Task => {
+    const live = byId.get(t.id);
+    if (live && live.updated_at !== t.updated_at) {
+      changed = true;
+      return live;
+    }
+    return t;
+  };
+  const next = msgs.map((m) => {
+    if (!m.task && !m.tasks) return m;
+    return {
+      ...m,
+      task: m.task ? sync(m.task) : m.task,
+      tasks: m.tasks ? m.tasks.map(sync) : m.tasks,
+    };
+  });
+  if (changed) setMsgs(next);
+}
+
+/**
  * 提交一句任务。整个请求脱离 React 组件生命周期：
  * 即使用户切到别的视图、ChatPanel 被卸载，AI 结果回来后仍会写入 store。
  */

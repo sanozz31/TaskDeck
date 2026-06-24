@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "TaskDeck",
-  "version": "1.0.3",
+  "productName": "万事",
+  "version": "1.1.0",
   "identifier": "com.taskdeck.desktop",
   "build": {
     "frontendDist": "../frontend/dist",
@@ -12,7 +12,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "万事 TaskDeck",
+        "title": "万事",
         "width": 1180,
         "height": 760,
         "minWidth": 720,
@@ -24,7 +24,7 @@
       {
         "label": "widget",
         "url": "widget.html",
-        "title": "TaskDeck 组件",
+        "title": "万事组件",
         "width": 64,
         "height": 64,
         "resizable": false,

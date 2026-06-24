@@ -1,7 +1,17 @@
 use std::sync::Mutex;
-use tauri::{Manager, RunEvent, State};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager, RunEvent, State};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
+
+/// 显示并聚焦主窗口（托盘点击 / 菜单项共用）。
+fn show_main(app: &tauri::AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
 
 /// 后端 sidecar 的动态端口（由其 stdout 的 `TASKDECK_PORT=<n>` 行上报）。
 struct ServerPort(Mutex<Option<u16>>);
@@ -70,6 +80,55 @@ pub fn run() {
                     }
                 }
             });
+
+            // 菜单栏（托盘）图标：左键点击打开万事主窗口，右键弹出功能菜单。
+            // 图标用 template png，macOS 按菜单栏明暗自动着色。
+            // 「进入XX」点击后显示主窗口并 emit navigate 事件，前端据此切换视图。
+            // 菜单宽度由最宽项决定（macOS 无宽度 API），用全角空格补宽；两侧对称补白使文字居中。
+            let pad = |t: &str| format!("\u{3000}\u{3000}{t}\u{3000}\u{3000}");
+            let nav_chat = MenuItem::with_id(app, "nav:chat", pad("进入对话"), true, None::<&str>)?;
+            let nav_cal =
+                MenuItem::with_id(app, "nav:calendar", pad("查看日历"), true, None::<&str>)?;
+            let nav_tags = MenuItem::with_id(app, "nav:tags", pad("查看标签"), true, None::<&str>)?;
+            let nav_all = MenuItem::with_id(app, "nav:all", pad("全部任务"), true, None::<&str>)?;
+            let sep1 = PredefinedMenuItem::separator(app)?;
+            let show_i = MenuItem::with_id(app, "show", pad("进入万事"), true, None::<&str>)?;
+            let sep2 = PredefinedMenuItem::separator(app)?;
+            let quit_i = MenuItem::with_id(app, "quit", pad("退出万事"), true, None::<&str>)?;
+            let menu = Menu::with_items(
+                app,
+                &[&nav_chat, &nav_cal, &nav_tags, &nav_all, &sep1, &show_i, &sep2, &quit_i],
+            )?;
+
+            TrayIconBuilder::with_id("main-tray")
+                .icon(tauri::include_image!("icons/tray-template.png"))
+                .icon_as_template(true)
+                .tooltip("万事")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| {
+                    let id = event.id.as_ref();
+                    match id {
+                        "show" => show_main(app),
+                        "quit" => app.exit(0),
+                        _ if id.starts_with("nav:") => {
+                            show_main(app);
+                            let _ = app.emit("navigate", &id[4..]);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        show_main(tray.app_handle());
+                    }
+                })
+                .build(app)?;
 
             Ok(())
         })
