@@ -9,11 +9,20 @@
 ### 新增
 
 - **日历「回到今天」按钮**：日期网格下方居中一颗蓝色按钮，一键切回当前年月并选中今天——跨年/跨月时年月下拉同步切回。
-- **当日小记**：日历日期网格下方整片区域新增随选中日期切换的小记输入框（标题「当日小记 · 月日 周X」），切到哪天显示哪天的记录。文本按日期存于 `localStorage`（`taskdeck.calendar.memos`），与「完成日映射」同处本机；内容清空自动删键、不留空串。
+- **当日小记**：日历日期网格下方整片区域新增随选中日期切换的小记输入框（标题「当日小记 · 月日 周X」），切到哪天显示哪天的记录。文本按日期存于本机 `localStorage`（`taskdeck.calendar.memos`）；内容清空自动删键、不留空串。
 
 ### 改进
 
 - **日历网格整体居中**：月份日期网格由靠左改为在面板内水平居中（两侧留白相等），「回到今天」按钮随之相对面板居中；顶部年月略向右对齐。
+
+### 重构（清零前端严格 lint）
+
+> 本轮把前端遗留的全部 `react-hooks` 严格规则报错（6 error + 1 warning，对齐 React Compiler 的 purity 规则）一次性清零，行为不变。
+
+- **完成日图片改为按日期确定性选图**（`CalendarView`）：原实现首次达成时随机抽图并把结果持久化到 `localStorage`（`taskdeck.calendar.dones`），抽图与落库都发生在 `useEffect` 内的 `setState`，触发级联渲染（`set-state-in-effect`）。现改为纯函数按日期字符串哈希取图——同一天恒定同一张、跨刷新不变，**无需任何状态 / ref / effect / 持久化**。副作用：升级前已达成日期显示的覆盖图标可能换成另一张（纯视觉，无数据影响）；`taskdeck.calendar.dones` 不再使用。
+- **标签默认选中改为派生**（`TagView`）：原用 effect 在无选中时 `setActive(首个标签)`；改为渲染期派生 `activeTag = active ?? 排序首个`，去掉 effect，且首帧即选中（不再闪一下空列表）。
+- **设置表单回填改为渲染期调整**（`SettingsModal`）：原用 effect 把服务端设置灌进表单 state；改为「记录上次 data + data 变化时渲染期回填」，避免级联渲染，用户编辑不被覆盖。
+- **提醒器 / 悬浮窗 ref 同步移出渲染期**（`Reminders`、`usePosture`）：原在渲染函数体里直接写 `ref.current`（`refs` 规则报错）；改为在 `useEffect` 内同步（悬浮窗的同步 effect 置于布局 effect 之前以保证读到最新值），并修掉 cleanup 读取可能过期 ref 的 warning。
 
 ### 构建 / CI
 

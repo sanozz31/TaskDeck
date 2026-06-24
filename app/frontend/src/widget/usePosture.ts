@@ -94,12 +94,17 @@ export function usePosture(): Posture {
   const lastTarget = useRef<{ x: number; y: number }>({ x: init.x, y: init.y });
   const apiRef = useRef<WinApi | null>(null);
 
+  // 这些 ref 让异步回调（apply / onDrag* / minimize）能读到最新姿态而不必重建闭包。
+  // 在 effect 里同步（不在渲染期写 ref）；本 effect 声明在 apply 布局 effect 之前，
+  // 保证状态变化时先刷新 ref、再跑 apply 读取。回调内部按需另有即时写入（事件期，非渲染期）。
   const dockedRef = useRef(docked);
   const expandedRef = useRef(expanded);
   const edgeRef = useRef(edge);
-  dockedRef.current = docked;
-  expandedRef.current = expanded;
-  edgeRef.current = edge;
+  useEffect(() => {
+    dockedRef.current = docked;
+    expandedRef.current = expanded;
+    edgeRef.current = edge;
+  }, [docked, expanded, edge]);
 
   // 手动拖动状态
   const drag = useRef({
@@ -197,6 +202,9 @@ export function usePosture(): Posture {
   // 一次性:缓存 API、置顶、失焦收球。
   useEffect(() => {
     if (!inTauri()) return;
+    // drag 是稳定 ref（对象引用不变，仅改其属性）；在 effect 内捕获该对象，
+    // cleanup 通过它读取卸载时刻最新的 raf id 取消，满足 lint 又不丢正确性。
+    const dragState = drag.current;
     let unFocus: (() => void) | undefined;
     (async () => {
       await refreshScreen();
@@ -214,7 +222,7 @@ export function usePosture(): Posture {
     })();
     return () => {
       unFocus?.();
-      if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
+      if (dragState.raf) cancelAnimationFrame(dragState.raf);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

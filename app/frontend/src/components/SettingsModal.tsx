@@ -23,6 +23,19 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [model, setModel] = useState("deepseek-v4-flash");
   const [apiKey, setApiKey] = useState("");
   const [language, setLanguage] = useState("zh");
+
+  // 拉到设置后回填表单（apiKey 不回显，仅用 hasDeepseekKey 提示）。
+  // 用「记录上一次 data + 渲染期调整」替代 effect 内 setState，避免级联渲染；
+  // 初值置 undefined（而非 data），保证 data 已就绪时首帧即回填；之后仅当 data
+  // 引用变化（失效重取）才再回填，期间用户的编辑不被覆盖。
+  const [syncedData, setSyncedData] = useState<typeof data>(undefined);
+  if (data && data !== syncedData) {
+    setSyncedData(data);
+    setProvider(data.aiProvider);
+    setBaseUrl(data.deepseekBaseUrl);
+    setModel(data.deepseekModel);
+    setLanguage(data.language);
+  }
   // 悬浮窗开关:本地窗口偏好,即时生效(不随「保存」按钮)。
   const [widgetOn, setWidgetOn] = useState(isWidgetEnabled());
   const toggleWidget = () => {
@@ -48,15 +61,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     qc.invalidateQueries();
     window.location.reload();
   };
-
-  // 拉到设置后回填（apiKey 不回显，仅用 hasDeepseekKey 提示）
-  useEffect(() => {
-    if (!data) return;
-    setProvider(data.aiProvider);
-    setBaseUrl(data.deepseekBaseUrl);
-    setModel(data.deepseekModel);
-    setLanguage(data.language);
-  }, [data]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

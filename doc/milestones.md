@@ -181,6 +181,11 @@ M4 规划（需求外，待排期）：
 - **回到今天**：日期网格下方居中的蓝色按钮，一键切回当前年月并选中今天（跨年/跨月时年月下拉同步切回）。
 - **当日小记**：日期网格下方整片区域的小记输入框，随选中日期切换（标题「当日小记 · 月日 周X」）。文本存 `localStorage`（`taskdeck.calendar.memos`），与「完成日映射」同处本机；清空自动删键。
 - **日历网格整体居中**：月份日期网格由靠左改为面板内水平居中（两侧留白相等），按钮随之相对面板居中；顶部年月略右移。
+- **重构·清零前端严格 lint（6 error + 1 warning，对齐 React Compiler purity 规则，行为不变）**：
+  - `CalendarView` 完成日图片：原"首次随机抽图 + 持久化 `taskdeck.calendar.dones`"在 effect 内 `setState`，改为按日期哈希的纯函数选图，去掉状态/ref/effect/持久化（副作用：升级前已达成日期的覆盖图标可能换张，纯视觉；`dones` 键弃用）。
+  - `TagView` 默认选中：effect `setActive` → 渲染期派生 `activeTag`。
+  - `SettingsModal` 表单回填：effect `setState` → 记录上次 data + 渲染期回填。
+  - `Reminders` / `usePosture`：渲染期写 `ref.current` → 移入 effect（悬浮窗同步 effect 置于布局 effect 前），并修掉 cleanup 过期 ref 的 warning。
 - **Windows CI 改为仅手动触发**：`build-windows.yml` 去掉 `push: v* tag` 自动触发（此前每次发版都在 windows runner 空跑 NSIS 且持续失败），改为 `workflow_dispatch`。macOS 发版只产 dmg。
 
 ## v1.1.0 — 全字段行内编辑 · 全窗口实时同步 ✅ 2026-06-24

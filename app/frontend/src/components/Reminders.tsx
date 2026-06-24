@@ -10,7 +10,6 @@ import type { Task } from "../types";
 export function Reminders() {
   const { data } = useAllTasks();
   const ref = useRef<Task[]>([]);
-  ref.current = data ?? [];
 
   useEffect(() => {
     ensureNotificationPermission();
@@ -18,8 +17,9 @@ export function Reminders() {
     return () => clearInterval(id);
   }, []);
 
-  // 任务数据就绪/变化时也查一次（启动补弹、新建任务后尽快纳入）
+  // 任务数据就绪/变化时：同步给定时器读取的引用，并立即查一次（启动补弹、新建任务后尽快纳入）
   useEffect(() => {
+    ref.current = data ?? [];
     if (data) checkReminders(data);
   }, [data]);
 

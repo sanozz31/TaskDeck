@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DayPicker, type DayButtonProps } from "react-day-picker";
 import { zhCN } from "date-fns/locale";
 import "react-day-picker/style.css";
@@ -22,9 +22,17 @@ const OVERLAY_URLS: Record<string, string> = {}; // 文件名 → 打包后 URL
 for (const [path, url] of Object.entries(OVERLAY_MODULES)) {
   OVERLAY_URLS[path.split("/").pop()!] = url;
 }
-const OVERLAY_NAMES = Object.keys(OVERLAY_URLS); // 稳定文件名，用于持久化（不存带 hash 的 URL）
-const DONES_KEY = "taskdeck.calendar.dones"; // { "YYYY-MM-DD": 图片文件名 }
+const OVERLAY_NAMES = Object.keys(OVERLAY_URLS); // 稳定文件名（不依赖带 hash 的打包 URL）
 const MEMOS_KEY = "taskdeck.calendar.memos"; // { "YYYY-MM-DD": 备忘文本 }
+
+// 按日期字符串稳定地挑一张覆盖图：纯函数，同一天恒定同一张、跨刷新不变，
+// 故无需把随机结果落库（djb2 风格哈希 → 取模图片数）。
+function pickOverlay(dateKey: string): string | undefined {
+  if (OVERLAY_NAMES.length === 0) return undefined;
+  let h = 0;
+  for (let i = 0; i < dateKey.length; i++) h = (h * 31 + dateKey.charCodeAt(i)) | 0;
+  return OVERLAY_NAMES[Math.abs(h) % OVERLAY_NAMES.length];
+}
 
 const PRI_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
 const RANK_NAME = ["low", "medium", "high", "urgent"] as const;
@@ -141,42 +149,13 @@ export function CalendarView() {
     return set;
   }, [tasks]);
 
-  // 达成日 → 图片名映射，持久化；首次达成随机选一张、之后不改名
-  const [overlayMap, setOverlayMap] = useState<Record<string, string>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(DONES_KEY) || "{}");
-    } catch {
-      return {};
-    }
-  });
-  useEffect(() => {
-    let changed = false;
-    const next = { ...overlayMap };
-    if (OVERLAY_NAMES.length > 0) {
-      for (const day of doneDays) {
-        if (!next[day]) {
-          next[day] = OVERLAY_NAMES[Math.floor(Math.random() * OVERLAY_NAMES.length)];
-          changed = true;
-        }
-      }
-    }
-    if (changed) {
-      setOverlayMap(next);
-      try {
-        localStorage.setItem(DONES_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [doneDays, overlayMap]);
-
   // 自定义日期按钮：达成日且未选中 → 叠加图片层（CSS 控制 hover 淡出）
   const components = useMemo(
     () => ({
       MonthCaption: HiddenCaption,
       DayButton: ({ day, modifiers, children, className, ...btn }: DayButtonProps) => {
         const key = ymd(day.date);
-        const overlay = doneDays.has(key) ? overlayMap[key] : undefined;
+        const overlay = doneDays.has(key) ? pickOverlay(key) : undefined;
         const overlayUrl = overlay ? OVERLAY_URLS[overlay] : undefined;
         const showOverlay = !!overlayUrl && !modifiers.selected;
         return (
@@ -197,7 +176,7 @@ export function CalendarView() {
         );
       },
     }),
-    [doneDays, overlayMap],
+    [doneDays],
   );
 
   return (

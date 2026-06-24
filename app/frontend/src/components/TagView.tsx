@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   useTags,
   useTagDefs,
@@ -34,12 +34,10 @@ export function TagView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defs, counts]);
 
-  // 默认选中排序后的第一个
-  useEffect(() => {
-    if (!active && ordered.length > 0) setActive(ordered[0]);
-  }, [ordered, active]);
+  // 实际生效的选中标签：用户未显式选择时回退到排序后的第一个（派生，不写 state）
+  const activeTag = active ?? ordered[0] ?? null;
 
-  const { data: tasks } = useTasksByTag(active);
+  const { data: tasks } = useTasksByTag(activeTag);
 
   const submitAdd = () => {
     const name = draft.trim();
@@ -50,7 +48,7 @@ export function TagView() {
 
   const remove = (name: string) => {
     delTag.mutate(name);
-    if (active === name) setActive(null);
+    if (activeTag === name) setActive(null);
   };
 
   return (
@@ -60,7 +58,7 @@ export function TagView() {
         {ordered.map((name) => (
           <span
             key={name}
-            className={`chip-tag${active === name ? " chip-tag--on" : ""}`}
+            className={`chip-tag${activeTag === name ? " chip-tag--on" : ""}`}
             onClick={() => setActive(name)}
           >
             #{name}
@@ -99,8 +97,8 @@ export function TagView() {
 
       <div className="tag-tasks">
         <TaskList
-          tasks={active ? tasks : []}
-          empty={active ? "该标签下暂无任务" : "选个标签看看，或在对话里记一条任务"}
+          tasks={activeTag ? tasks : []}
+          empty={activeTag ? "该标签下暂无任务" : "选个标签看看，或在对话里记一条任务"}
         />
       </div>
 
