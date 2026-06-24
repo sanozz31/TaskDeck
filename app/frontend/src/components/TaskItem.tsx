@@ -373,7 +373,7 @@ export function TaskItem({
       {confirmArchive && (
         <ConfirmModal
           title="归档任务"
-          message={`「归档」会把这条任务移到「全部任务」页面中的「已完成任务」，可在那里恢复或永久删除。确定归档「${task.title}」？`}
+          message="确定将这条任务归档至「已完成任务」？"
           confirmText="归档"
           danger
           onConfirm={() => del.mutate(task.id)}

@@ -32,7 +32,11 @@ export function ArchivedCard({
       <div className="task-body">
         <div className="task-title-row">
           <span className="task-title-main">
-            <span className="task-title">{task.title}</span>
+            <span
+              className={`task-title${task.status === "done" ? " task-title--done" : ""}`}
+            >
+              {task.title}
+            </span>
           </span>
           <span
             className="task-pri"

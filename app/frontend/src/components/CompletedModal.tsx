@@ -17,7 +17,7 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
   const items = [...(done ?? []), ...(archived ?? [])];
   const update = useUpdateTask();
   const qc = useQueryClient();
-  const [confirming, setConfirming] = useState(false); // 清理所有已完成
+  const [confirming, setConfirming] = useState(false); // 清空已归档（永久删除）
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
@@ -26,10 +26,10 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
     notifyTasksChanged();
   };
 
-  const clearAll = useMutation({
+  // 清空：永久删除（硬删，不可恢复）弹窗里的所有任务
+  const purgeAll = useMutation({
     mutationFn: async () => {
-      const tasks = done ?? [];
-      await Promise.all(tasks.map((t) => api.deleteTask(t.id)));
+      await Promise.all(items.map((t) => api.purgeTask(t.id)));
     },
     onSuccess: invalidate,
   });
@@ -50,7 +50,7 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const hasDone = (done?.length ?? 0) > 0;
+  const hasItems = items.length > 0;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -81,14 +81,14 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {hasDone && (
+        {hasItems && (
           <div className="completed-clearbar">
             <button
               className="clear-completed-btn"
               onClick={() => setConfirming(true)}
-              disabled={clearAll.isPending}
+              disabled={purgeAll.isPending}
             >
-              {clearAll.isPending ? "清理中…" : "清理所有已完成任务"}
+              {purgeAll.isPending ? "清理中…" : "清空所有任务"}
             </button>
           </div>
         )}
@@ -96,11 +96,11 @@ export function CompletedModal({ onClose }: { onClose: () => void }) {
 
       {confirming && (
         <ConfirmModal
-          title="清理所有已完成任务"
-          message={`将归档 ${done?.length ?? 0} 条已完成任务（之后可在「已归档」里恢复或永久删除）。`}
-          confirmText="清理"
+          title="清空所有任务"
+          message={`将永久删除这里的全部 ${items.length} 条任务，不可恢复，确定继续？`}
+          confirmText="永久删除"
           danger
-          onConfirm={() => clearAll.mutate()}
+          onConfirm={() => purgeAll.mutate()}
           onClose={() => setConfirming(false)}
         />
       )}

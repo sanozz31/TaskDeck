@@ -247,6 +247,159 @@
 .msg--ai {
   justify-content: flex-start;
 }
+/* 气泡 + 悬停操作栏的纵向容器；撑满 .msg(760)，靠 align-items 决定左右 */
+.msg-col {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.msg--user .msg-col {
+  align-items: flex-end;
+}
+.msg--ai .msg-col {
+  align-items: flex-start;
+}
+/* 悬停操作栏：默认隐藏，hover 整条消息时淡入 */
+.msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.msg:hover .msg-actions,
+.msg-actions:focus-within {
+  opacity: 1;
+}
+.msg-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--ink-tertiary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.msg-act:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+/* 版本切换器「‹ 2/3 ›」 */
+.ver-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin-right: 4px;
+}
+.ver-arrow {
+  border: none;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.ver-arrow:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.ver-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ver-idx {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  min-width: 30px;
+  text-align: center;
+}
+/* 用户气泡行内编辑：完全沿用气泡盒（padding/圆角/字号/最大宽度），白底 + 蓝边提示编辑态。
+   inset 阴影当作边框，不占位、不撑大尺寸。 */
+.bubble.bubble--editing {
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+/* 镜像撑宽：用不可见镜像按内容定宽高，textarea 叠在同一格里跟随——
+   宽高都贴文字、与原气泡完全一致（不依赖 field-sizing 的浏览器支持）。 */
+.autosize {
+  display: inline-grid;
+  min-width: 4ch;
+}
+.autosize > .autosize-mirror,
+.autosize > .bubble-edit-input {
+  grid-area: 1 / 1;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+}
+.autosize-mirror {
+  visibility: hidden;
+  pointer-events: none;
+  min-height: 1.55em;
+}
+.bubble-edit-input {
+  width: auto;
+  min-width: 0;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+  caret-color: var(--accent);
+}
+/* 编辑态下方的「取消 / 发送」常显（不靠 hover） */
+.msg-actions--edit {
+  opacity: 1;
+  gap: 6px;
+}
+.msg-edit-cancel {
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.msg-edit-cancel:hover {
+  background: var(--surface-hover);
+}
+.msg-edit-send {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+}
+.msg-edit-send:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.msg-edit-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .bubble {
   padding: 11px 15px;
   border-radius: var(--radius-lg);
@@ -402,8 +555,10 @@
 .task-card--done {
   opacity: 0.55;
 }
-.task-card--done .task-title {
+.task-card--done .task-title,
+.task-title--done {
   text-decoration: line-through;
+  color: var(--ink-tertiary);
 }
 .task-check {
   flex: none;
@@ -1552,43 +1707,6 @@
 }
 
 /* ===== 对话气泡右键 / 长按上下文菜单 ===== */
-.ctx-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-}
-.ctx-menu {
-  position: fixed;
-  z-index: 111;
-  min-width: 104px;
-  padding: 4px;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-md, 10px);
-  box-shadow: var(--shadow-pop);
-}
-.ctx-item {
-  display: block;
-  width: 100%;
-  text-align: center;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  font-size: 13.5px;
-  padding: 7px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.ctx-item:hover {
-  background: var(--surface-hover);
-}
-.ctx-item--danger {
-  color: var(--pri-urgent);
-}
-.ctx-item--danger:hover {
-  background: rgba(255, 59, 48, 0.08);
-}
 .modal-card {
   background: var(--canvas);
   border-radius: var(--radius-lg);
@@ -1727,6 +1845,13 @@
 }
 .btn-ghost:hover {
   background: var(--surface-hover);
+}
+/* 次危险动作（如「删除此版」）：文字红、hover 浅红底，弱于实心 btn-danger */
+.btn-ghost--danger {
+  color: var(--pri-urgent);
+}
+.btn-ghost--danger:hover {
+  background: rgba(255, 59, 48, 0.08);
 }
 .btn-primary {
   background: var(--accent);
