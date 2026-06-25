@@ -24,6 +24,13 @@
 - **后端**：Node + Express + better-sqlite3；AI 走 DeepSeek（OpenAI 兼容，纯 `fetch`，无第三方 SDK）
 - **数据**：本地 SQLite（WAL）
 
+## 免责声明与使用说明
+
+- 本软件按“现状”（AS IS）提供，仅作为个人任务管理辅助工具；AI 解析结果可能出错，重要事项请自行核对，不要将其作为关键事务的唯一提醒或决策依据。
+- 本软件主要将任务、设置、对话记录等数据保存在本机；请自行做好备份，并妥善保管你配置的第三方 AI 服务 API Key。
+- 本软件可供个人非商用使用；如展示、介绍、转载或分享，请署名 `sanozz31` 并保留项目来源。未经书面同意，不得商用、换皮发布、收费分发或作为商业产品/服务的一部分。
+- 详细说明请阅读：[非商用使用与免责声明](./LICENSE)、[隐私与用户数据说明](./PRIVACY.md)、[风险提示](./DISCLAIMER.md)、[第三方声明](./THIRD-PARTY-NOTICES.md)。
+
 ## 快速开始
 
 > 前置：Node ≥ 20、Rust 工具链（Tauri 需要）、macOS Xcode CLT；以及一个 DeepSeek API Key（首次启动时在引导里填）。
