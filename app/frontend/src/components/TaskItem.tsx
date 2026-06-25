@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DayPicker, type DayButtonProps } from "react-day-picker";
+import { zhCN } from "date-fns/locale";
+import "react-day-picker/style.css";
 import { ConfirmModal } from "./ConfirmModal";
 import type { Task, Priority } from "../types";
 import { PRIORITY_LABEL, PRIORITY_VAR, prettyDate, dueTone } from "../lib/format";
@@ -8,13 +11,103 @@ import { useUpdateTask, useDeleteTask, useTagDefs } from "../store/useTasks";
 import { markCompleted, unmarkCompleted } from "../lib/sessionCompleted";
 
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
+const pad = (n: number) => String(n).padStart(2, "0");
+const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dateFromYmd = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d) ? new Date(y, m - 1, d) : new Date();
+};
+
+function TaskDatePicker({
+  value,
+  onChange,
+  onKeyDown,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(() => dateFromYmd(value));
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const selected = value ? dateFromYmd(value) : undefined;
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!popoverRef.current?.contains(e.target as Node)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open]);
+
+  const pick = useCallback((d: Date) => {
+    onChange(ymd(d));
+    setMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+  }, [onChange]);
+
+  const components = useMemo(
+    () => ({
+      DayButton: ({ day, children, className, ...btn }: DayButtonProps) => (
+        <button
+          className={className}
+          {...btn}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            pick(day.date);
+          }}
+        >
+          {children}
+        </button>
+      ),
+    }),
+    [pick],
+  );
+
+  return (
+    <div className="task-edit-date-wrap" ref={popoverRef}>
+      <button
+        type="button"
+        className={`task-edit-date${open ? " task-edit-date--open" : ""}`}
+        onClick={() => {
+          if (!open) setMonth(dateFromYmd(value));
+          setOpen((v) => !v);
+        }}
+        onKeyDown={onKeyDown}
+      >
+        {value || "选择日期"}
+      </button>
+      {open && (
+        <div className="task-edit-date-popover">
+          <DayPicker
+            mode="single"
+            locale={zhCN}
+            month={month}
+            onMonthChange={setMonth}
+            selected={selected}
+            onSelect={(d) => d && pick(d)}
+            components={components}
+            showOutsideDays
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TaskItem({
   task,
   hideArchive = false,
+  visibleDate,
 }: {
   task: Task;
   hideArchive?: boolean;
+  visibleDate?: string;
 }) {
   const update = useUpdateTask();
   const del = useDeleteTask();
@@ -117,7 +210,12 @@ export function TaskItem({
     // 截止日期 / 时间（空串归一为 null）
     const nextDue = dueDate || null;
     const nextTime = dueTime || null;
-    if (nextDue !== (task.due_date ?? null)) patch.due_date = nextDue;
+    if (nextDue !== (task.due_date ?? null)) {
+      patch.due_date = nextDue;
+      if (visibleDate && task.scheduled_date === visibleDate && task.due_date !== visibleDate) {
+        patch.scheduled_date = nextDue;
+      }
+    }
     if (nextTime !== (task.due_time ?? null)) patch.due_time = nextTime;
     if (Object.keys(patch).length > 0) update.mutate({ id: task.id, patch });
     setEditing(false);
@@ -146,7 +244,7 @@ export function TaskItem({
   };
 
   // 标题 / 截止日期 / 截止时刻输入框共用：Enter 保存、Esc 取消
-  const onFieldKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onFieldKey = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       saveEdit();
@@ -272,11 +370,9 @@ export function TaskItem({
             </div>
             <div className="task-edit-row">
               <span className="task-edit-label">截止</span>
-              <input
-                type="date"
-                className="task-edit-date"
+              <TaskDatePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={setDueDate}
                 onKeyDown={onFieldKey}
               />
               <input

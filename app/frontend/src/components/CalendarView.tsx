@@ -10,6 +10,16 @@ import type { Priority, Task } from "../types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const startOfCalendarGrid = (d: Date) => {
+  const first = new Date(d.getFullYear(), d.getMonth(), 1);
+  const offset = first.getDay() === 0 ? 6 : first.getDay() - 1;
+  return new Date(first.getFullYear(), first.getMonth(), first.getDate() - offset);
+};
+const endOfCalendarGrid = (d: Date) => {
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const offset = last.getDay() === 0 ? 0 : 7 - last.getDay();
+  return new Date(last.getFullYear(), last.getMonth(), last.getDate() + offset);
+};
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -45,8 +55,8 @@ export function CalendarView() {
   const [month, setMonth] = useState(() => new Date());
   const [selected, setSelected] = useState<Date>(() => new Date());
 
-  const from = ymd(new Date(month.getFullYear(), month.getMonth(), 1));
-  const to = ymd(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+  const from = ymd(startOfCalendarGrid(month));
+  const to = ymd(endOfCalendarGrid(month));
   const { data: tasks } = useCalendar(from, to);
 
   // 按「当天最高优先级」给有任务的日期分桶，圆点据此着色
@@ -254,7 +264,7 @@ export function CalendarView() {
       </div>
       <div className="cal-day">
         <h3 className="cal-day-title">{prettyDate(selKey)}</h3>
-        <TaskList tasks={dayTasks} empty="这一天还没有安排" />
+        <TaskList tasks={dayTasks} empty="这一天还没有安排" visibleDate={selKey} />
       </div>
     </div>
   );

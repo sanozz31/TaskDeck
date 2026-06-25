@@ -876,7 +876,55 @@
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
+.task-edit-date {
+  min-width: 116px;
+  text-align: left;
+}
+.task-edit-date-wrap {
+  position: relative;
+}
+.task-edit-date-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 10px);
+  left: 0;
+  padding: 8px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-popover, 0 12px 30px rgba(0, 0, 0, 0.12));
+  overflow: hidden;
+}
+.task-edit-date-popover .rdp-root {
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-background-color: var(--accent-soft);
+  font-size: 12px;
+}
+.task-edit-date-popover .rdp-months {
+  max-width: 244px;
+}
+.task-edit-date-popover .rdp-month_grid {
+  border-spacing: 0;
+}
+.task-edit-date-popover .rdp-weekday {
+  padding-block: 1px;
+  padding-bottom: 7px;
+}
+.task-edit-date-popover .rdp-week,
+.task-edit-date-popover .rdp-weekdays {
+  line-height: 1;
+}
+.task-edit-date-popover .rdp-day {
+  height: 24px;
+}
+.task-edit-date-popover .rdp-day_button {
+  width: 28px;
+  height: 24px;
+  border-radius: 9px;
+  line-height: 1;
+}
 .task-edit-date:focus,
+.task-edit-date--open,
 .task-edit-time:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
