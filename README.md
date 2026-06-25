@@ -31,21 +31,6 @@
 - 本软件可供个人非商用使用；如展示、介绍、转载或分享，请署名 `sanozz31` 并保留项目来源。未经书面同意，不得商用、换皮发布、收费分发或作为商业产品/服务的一部分。
 - 详细说明请阅读：[非商用使用与免责声明](./LICENSE)、[隐私与用户数据说明](./PRIVACY.md)、[风险提示](./DISCLAIMER.md)、[第三方声明](./THIRD-PARTY-NOTICES.md)。
 
-## 快速开始
-
-> 前置：Node ≥ 20、Rust 工具链（Tauri 需要）、macOS Xcode CLT；以及一个 DeepSeek API Key（首次启动时在引导里填）。
-
-```bash
-cd app
-
-# 方式一：完整桌面应用（Tauri 窗口）
-npm run dev
-
-# 方式二：仅浏览器调试（不编译 Rust，最快）
-npm run dev:browser   # 然后浏览器打开 http://localhost:5173
-```
-
-首次 `npm run dev` 会编译 Tauri（Rust，稍慢）；之后秒起。
 
 ## 目录结构
 
