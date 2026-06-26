@@ -64,10 +64,8 @@ export function CalendarView() {
     const maxRank = new Map<string, number>();
     (tasks ?? []).forEach((t) => {
       const r = PRI_RANK[t.priority] ?? 1;
-      for (const key of [t.due_date, t.scheduled_date]) {
-        if (!key) continue;
-        maxRank.set(key, Math.max(maxRank.get(key) ?? -1, r));
-      }
+      const key = t.due_date;
+      if (key) maxRank.set(key, Math.max(maxRank.get(key) ?? -1, r));
     });
     const toDate = (s: string) => {
       const [y, m, d] = s.split("-").map(Number);
@@ -99,7 +97,7 @@ export function CalendarView() {
   const selKey = ymd(selected);
   // 当天任务按具体时间(due_time, 24h)升序；无时间的排在最后
   const dayTasks: Task[] = (tasks ?? [])
-    .filter((t) => t.due_date === selKey || t.scheduled_date === selKey)
+    .filter((t) => t.due_date === selKey)
     .sort((a, b) => (a.due_time ?? "99:99").localeCompare(b.due_time ?? "99:99"));
 
   // ===== 日期备忘录（随选中日期切换，存 localStorage，与「完成日映射」同处） =====
@@ -143,17 +141,16 @@ export function CalendarView() {
   };
 
   // ===== 「完成日」覆盖图片 =====
-  // 某天命中任务（due 或 scheduled）≥1 且全部 done → 达成（每个任务同一天只计一次）
+  // 某天命中任务（按 due_date）≥1 且全部 done → 达成
   const doneDays = useMemo(() => {
     const hit = new Map<string, { total: number; done: number }>();
     (tasks ?? []).forEach((t) => {
-      const keys = new Set([t.due_date, t.scheduled_date].filter(Boolean) as string[]);
-      keys.forEach((k) => {
-        const e = hit.get(k) ?? { total: 0, done: 0 };
-        e.total += 1;
-        if (t.status === "done") e.done += 1;
-        hit.set(k, e);
-      });
+      const k = t.due_date;
+      if (!k) return;
+      const e = hit.get(k) ?? { total: 0, done: 0 };
+      e.total += 1;
+      if (t.status === "done") e.done += 1;
+      hit.set(k, e);
     });
     const set = new Set<string>();
     for (const [k, e] of hit) if (e.total > 0 && e.done === e.total) set.add(k);
@@ -264,7 +261,7 @@ export function CalendarView() {
       </div>
       <div className="cal-day">
         <h3 className="cal-day-title">{prettyDate(selKey)}</h3>
-        <TaskList tasks={dayTasks} empty="这一天还没有安排" visibleDate={selKey} />
+        <TaskList tasks={dayTasks} empty="这一天还没有安排" />
       </div>
     </div>
   );

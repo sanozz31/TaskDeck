@@ -11,7 +11,6 @@ export interface Task {
   priority: Priority;
   due_date: string | null;
   due_time: string | null;
-  scheduled_date: string | null;
   status: TaskStatus;
   ai_model: string | null;
   completed_at: string | null;

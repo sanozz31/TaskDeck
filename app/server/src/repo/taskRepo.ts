@@ -14,7 +14,6 @@ export interface Task {
   priority: string;
   due_date: string | null;
   due_time: string | null;
-  scheduled_date: string | null;
   status: TaskStatus;
   ai_model: string | null;
   completed_at: string | null;
@@ -30,8 +29,9 @@ interface TaskRow extends Omit<Task, "tags"> {
 
 function rowToTask(row: TaskRow): Task {
   const { ai_meta, ...rest } = row;
-  // DB 仍保留 deprecated 的 category 列（兼容旧库），从对外对象中剔除
+  // DB 仍保留 deprecated 的 category / scheduled_date 列（兼容旧库），从对外对象中剔除
   delete (rest as Record<string, unknown>).category;
+  delete (rest as Record<string, unknown>).scheduled_date;
   let tags: string[] = [];
   try {
     tags = JSON.parse(row.tags) as string[];
@@ -59,10 +59,10 @@ export function createTask(args: {
   db.prepare(
     `INSERT INTO tasks
       (id, raw_input, title, notes, tags, priority,
-       due_date, due_time, scheduled_date, status, ai_meta, ai_model, completed_at, created_at, updated_at)
+       due_date, due_time, status, ai_meta, ai_model, completed_at, created_at, updated_at)
      VALUES
       (@id, @raw_input, @title, @notes, @tags, @priority,
-       @due_date, @due_time, @scheduled_date, @status, @ai_meta, @ai_model, @completed_at, @created_at, @updated_at)`,
+       @due_date, @due_time, @status, @ai_meta, @ai_model, @completed_at, @created_at, @updated_at)`,
   ).run({
     id,
     raw_input: rawInput,
@@ -72,7 +72,6 @@ export function createTask(args: {
     priority: analysis.priority ?? "medium",
     due_date: analysis.due_date ?? null,
     due_time: analysis.due_time ?? null,
-    scheduled_date: analysis.scheduled_date ?? null,
     status: "todo",
     ai_meta: JSON.stringify(analysis),
     ai_model: aiModel,
@@ -106,9 +105,7 @@ export function listTasks(filter: {
     where.push("t.status != 'archived'");
   }
   if (filter.from && filter.to) {
-    where.push(
-      "((t.due_date BETWEEN @from AND @to) OR (t.scheduled_date BETWEEN @from AND @to))",
-    );
+    where.push("(t.due_date BETWEEN @from AND @to)");
     params.from = filter.from;
     params.to = filter.to;
   }
@@ -122,7 +119,7 @@ export function listTasks(filter: {
 
   const sql = `SELECT DISTINCT t.* FROM tasks t${tagJoin}
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
-    ORDER BY COALESCE(t.due_date, t.scheduled_date, t.created_at) ASC, t.created_at DESC`;
+    ORDER BY COALESCE(t.due_date, t.created_at) ASC, t.created_at DESC`;
 
   const rows = getDb().prepare(sql).all(params) as TaskRow[];
   return rows.map(rowToTask);
@@ -148,7 +145,6 @@ const PATCHABLE = new Set([
   "priority",
   "due_date",
   "due_time",
-  "scheduled_date",
   "status",
 ]);
 

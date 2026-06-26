@@ -41,7 +41,6 @@ function fallbackAnalysis(input: string): Analysis {
     priority: "medium",
     due_date: null,
     due_time: null,
-    scheduled_date: null,
   };
 }
 

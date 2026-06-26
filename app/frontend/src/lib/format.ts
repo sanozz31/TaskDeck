@@ -38,7 +38,7 @@ export function prettyDate(d: string | null): string {
  */
 export function deadlineSortKey(t: Task): string {
   if (t.due_date && t.due_time) return `0_${t.due_date} ${t.due_time}`;
-  return `1_${t.due_date ?? t.scheduled_date ?? "9999-99-99"}`;
+  return `1_${t.due_date ?? "9999-99-99"}`;
 }
 
 /** 相对今天的紧迫度，用于 due 文案着色。 */

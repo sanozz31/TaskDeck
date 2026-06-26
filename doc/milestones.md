@@ -23,7 +23,7 @@
 - **日历**：左上角年 / 月支持点击微调与直接输入数字切换；圆点按**当天最高优先级**着色；当天任务按具体时间（`due_time`，24h）升序排列。
 - **标签库**：标签升级为字典表 `tag_defs`（预设 学习/工作/生活/娱乐/健康/财务/家庭/社交/旅行）；标签页支持新增 / 删除；AI 打标签优先复用标签库，新标签自动并入。
 - **具体时间维度**：`due_time`（HH:MM，24h），AI 从「下午3点」等解析。
-- **DDL 通知提醒**（App 运行时）：任务**截止前 24 小时、前 6 小时**各弹一次系统通知；超过截止 24h 不再补提醒（防刷屏）；Web Notification + localStorage 去重；**关闭 App 不提醒**为当前 MVP 限制。
+- **DDL 通知提醒**（App 运行时）：任务**截止前 24 小时、前 6 小时**各弹一次系统通知；超过截止 24h 不再补提醒（防刷屏）；双通道（桌面 Tauri 原生通知 / 浏览器 Web Notification 降级，v1.2.2 起）+ localStorage 去重；**关闭 App 不提醒**为当前 MVP 限制。
 - **对话历史持久化**（localStorage，刷新不丢）。
 - 删除对话页示例气泡；全部任务 / 标签页空态引导 CTA。
 - **设置与多模型接入**：侧栏齿轮进设置弹窗，AI provider 可在「本机 Claude Code（默认，零配置）」与「DeepSeek（OpenAI 兼容，需 API Key）」间切换；语言偏好（本轮仅 UI）。DeepSeek 模型从手填文本框升级为下拉，选项为当前生产版 `deepseek-v4-flash` / `deepseek-v4-pro`（旧别名 `deepseek-chat` / `deepseek-reasoner` 官方 2026/07/24 停用，已下线）；服务端默认模型同步改为 `deepseek-v4-flash`。侧栏底部常显当前接入模型名。
@@ -158,7 +158,7 @@
 |---|---|---|
 | **多任务安排** | `schema.ts` / `openaiCompatProvider.ts` / `routes/tasks.ts` / `chatStore.ts` / `ChatPanel.tsx` | 一句话→N 条任务，日期范围/重复自动展开；前端「已登记 N 项 ✓」 |
 | **时间检测 & 优先级实时变更** | `deadline.ts`（`dueAtMs`、`isImminent`）/ `taskRepo.ts`（`escalatePriorities`）/ `useNow.ts`（30s 心跳） | 截止时刻单源计算 → 迫近判定 + 优先级自动升级（≤24h→急/≤48h→高/≤72h→中，只升不降） |
-| **DDL 提醒** | `reminders.ts`（复用 `dueAtMs`）/ Web Notification + `localStorage` 去重 | 截止前 24h/6h 各弹一次；过期 24h 不再补；纯日期锚定 23:59 |
+| **DDL 提醒** | `reminders.ts`（复用 `dueAtMs`）/ 双通道：Tauri 原生通知 + Web Notification 降级 + `localStorage` 去重 | 截止前 24h/6h 各弹一次；过期 24h 不再补；纯日期锚定 23:59（桌面版原生通知自 v1.2.2） |
 
 ### 遗留 & 后续（M4+）
 
@@ -173,6 +173,24 @@ M4 规划（需求外，待排期）：
 - **通知常驻**：关闭 App 也能提醒（托盘 / 后台常驻进程，开机自启）——补齐当前「仅 App 运行时生效」的 MVP 限制
 - 提醒联动 Mochi 表情
 - 对话式追问改单（「把这个改到下周」）
+
+## v1.2.2 — 提醒接入原生通道 · 日历改期残留根治 ✅ 2026-06-26
+
+> 修复 DDL 系统提醒在桌面版从未触发的根因，并彻底根除日历改期后任务残留旧日期的问题。
+
+- **提醒双通道**（`reminders.ts` + `tauri-plugin-notification`）：桌面端原 `new Notification()` 在 macOS WKWebView 不可用（API 缺失，`checkReminders` 静默返回），桌面版用户从未收到过提醒。改为桌面走 Tauri 原生通知插件、浏览器降级 Web Notification；补 Rust 插件注册（`lib.rs`）、`notification:default` 能力授权（`capabilities/default.json`）与依赖（`Cargo.toml`）。权限门控按通道分别检查，首启申请系统授权。
+- **日历改期残留根治**：日历圆点 / 当日卡片 / 完成图统计全部改为只认 `due_date`（`CalendarView.tsx`），并删除 `TaskItem` 里有缺陷的执行日迁移逻辑及连带的 `visibleDate` 死参数。1.2.1 仅在狭窄条件下迁移、覆盖不全，本版从显示层根除。
+- **下线 `scheduled_date` 维度**：比照 `category`，从日历显示、任务排序（`format.ts`）、AI 输出 schema（`ai/schema.ts`）、后端读写与查询（`taskRepo.ts`）全部移除；DB 列保留兼容旧库，`rowToTask` 从对外对象剔除，API 不再返回。
+- **文档**：`CHANGELOG` / `README` / `data-model`（`scheduled_date` 标 deprecated、索引与日历查询更新）/ `api`（日历命中口径、PATCH 白名单）对齐现状。
+
+## v1.2.1 — 日历任务卡日期编辑修复 ✅ 2026-06-25
+
+> 日历任务卡日期编辑修复版：跨月选日不落点、改期后残留旧日、月历外侧日期数据展示。
+
+- **任务卡小日历跨月选日**：编辑态原生日期输入换为应用内小日历，点当前月页里的外月日期能正确选中、切月并保留高亮。
+- **改期后任务残留旧日期（首次尝试）**：手动改截止日时同步迁移执行日，避免日历因旧 `scheduled_date` 命中原日残留任务卡（注：此修法覆盖不全，已在 v1.2.2 从根上解决）。
+- **大日历外月日期任务为空**：日历数据查询范围由「本月 1 日到月底」扩展为「当前可见月历网格」。
+- **小日历视觉打磨**：弹层圆角下移、日期格更紧凑。
 
 ## v1.2.0 — 对话卡操作栏 · 编辑/重试/版本切换 ✅ 2026-06-24
 

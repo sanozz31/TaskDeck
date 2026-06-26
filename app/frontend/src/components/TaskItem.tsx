@@ -103,11 +103,9 @@ function TaskDatePicker({
 export function TaskItem({
   task,
   hideArchive = false,
-  visibleDate,
 }: {
   task: Task;
   hideArchive?: boolean;
-  visibleDate?: string;
 }) {
   const update = useUpdateTask();
   const del = useDeleteTask();
@@ -210,12 +208,7 @@ export function TaskItem({
     // 截止日期 / 时间（空串归一为 null）
     const nextDue = dueDate || null;
     const nextTime = dueTime || null;
-    if (nextDue !== (task.due_date ?? null)) {
-      patch.due_date = nextDue;
-      if (visibleDate && task.scheduled_date === visibleDate && task.due_date !== visibleDate) {
-        patch.scheduled_date = nextDue;
-      }
-    }
+    if (nextDue !== (task.due_date ?? null)) patch.due_date = nextDue;
     if (nextTime !== (task.due_time ?? null)) patch.due_time = nextTime;
     if (Object.keys(patch).length > 0) update.mutate({ id: task.id, patch });
     setEditing(false);

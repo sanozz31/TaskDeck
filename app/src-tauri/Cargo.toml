@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.2.1"
+version = "1.2.2"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -23,3 +23,5 @@ serde = { version = "1.0", features = ["derive"] }
 # macos-private-api:透明组件窗口所需；tray-icon:菜单栏托盘图标；image-png:加载 png 图标
 tauri = { version = "2.11.3", features = ["macos-private-api", "tray-icon", "image-png"] }
 tauri-plugin-shell = "2"
+# 本地系统通知：DDL 提醒走原生通道（macOS WKWebView 不支持 Web Notification）
+tauri-plugin-notification = "2"

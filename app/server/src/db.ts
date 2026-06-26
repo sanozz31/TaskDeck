@@ -30,7 +30,7 @@ function migrate(db: Database.Database): void {
       priority       TEXT NOT NULL DEFAULT 'medium',
       due_date       TEXT,
       due_time       TEXT,
-      scheduled_date TEXT,
+      scheduled_date TEXT, -- deprecated: 安排日维度已下线，日历只认 due_date，列保留以兼容旧库，应用层不再读写
       status         TEXT NOT NULL DEFAULT 'todo',
       ai_meta        TEXT,
       ai_model       TEXT,
@@ -39,7 +39,6 @@ function migrate(db: Database.Database): void {
       updated_at     TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_due       ON tasks(due_date);
-    CREATE INDEX IF NOT EXISTS idx_tasks_scheduled ON tasks(scheduled_date);
     CREATE INDEX IF NOT EXISTS idx_tasks_status    ON tasks(status);
   `);
 

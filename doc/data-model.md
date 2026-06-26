@@ -15,16 +15,16 @@ SQLite，WAL 模式，`foreign_keys=ON`。文件：`app/server/data/taskdeck.db`
 | `priority` | TEXT | `low` / `medium` / `high` / `urgent`，默认 `medium` |
 | `due_date` | TEXT? | 截止日 `YYYY-MM-DD`，可空 |
 | `due_time` | TEXT? | 截止具体时刻 `HH:MM`（24h），可空。用于提前提醒、当天按时刻排序、迫近判定 |
-| `scheduled_date` | TEXT? | 执行日 `YYYY-MM-DD`，可空 |
+| `scheduled_date` | TEXT? | **deprecated**：执行日维度已下线（日历改为只认 `due_date`），列保留以兼容旧库，应用层不再读写（`rowToTask` 会从对外对象剔除） |
 | `status` | TEXT | `todo` / `doing` / `done` / `archived`，默认 `todo` |
 | `ai_meta` | TEXT? | 原始 structured_output（审计用，对外对象不返回） |
 | `ai_model` | TEXT? | 实际使用的模型，如 `deepseek-v4-flash` |
 | `completed_at` | TEXT? | 标记完成的时刻（ISO）；用于完成满 7 天物理清理。状态离开 `done` 时清空 |
 | `created_at` / `updated_at` | TEXT | ISO 时间戳 |
 
-索引：`due_date`、`scheduled_date`、`status`。
+索引：`due_date`、`status`。
 
-> 历史漂移说明：早期文档曾列 `category` 为有效列并建 `category` 索引——现 `category` 已 deprecated、该索引已不再创建。旧库中若残留该列/索引不影响运行。
+> 历史漂移说明：早期文档曾列 `category`、`scheduled_date` 为有效列并各建索引——现两者均已 deprecated、对应索引不再创建。旧库中若残留该列/索引不影响运行。
 
 ## tag_defs 表（标签库 / 字典表）
 
@@ -65,9 +65,9 @@ SQLite，WAL 模式，`foreign_keys=ON`。文件：`app/server/data/taskdeck.db`
 SELECT DISTINCT t.* FROM tasks t, json_each(t.tags) j
 WHERE j.value = ? AND t.status != 'archived';
 
--- 日历范围（命中截止或执行日）
+-- 日历范围（命中截止日）
 SELECT DISTINCT t.* FROM tasks t
-WHERE (t.due_date BETWEEN ? AND ?) OR (t.scheduled_date BETWEEN ? AND ?);
+WHERE (t.due_date BETWEEN ? AND ?);
 
 -- 标签计数（排除归档）
 SELECT j.value AS tag, COUNT(*) AS count

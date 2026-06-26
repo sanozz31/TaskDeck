@@ -6,7 +6,6 @@ export interface Analysis {
   priority: "low" | "medium" | "high" | "urgent";
   due_date: string | null;
   due_time: string | null;
-  scheduled_date: string | null;
 }
 
 export const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
@@ -48,12 +47,8 @@ const TASK_ITEM_SCHEMA = {
         "②相对偏移（'十分钟后''半小时后''2小时后'）——以 prompt 给出的当前时刻为基准换算出绝对 HH:MM，" +
         "若换算后跨过零点则 due_date 进位到次日。无任何时间信号才填 null",
     },
-    scheduled_date: {
-      type: ["string", "null"],
-      description: "建议开始/执行日 YYYY-MM-DD；无明确信号时可等于或早于 due_date；无则 null",
-    },
   },
-  required: ["title", "tags", "priority", "due_date", "due_time", "scheduled_date"],
+  required: ["title", "tags", "priority", "due_date", "due_time"],
 } as const;
 
 /** 顶层输出：一句话可能含多个任务，统一返回 { tasks: [...] }（至少 1 个）。 */
@@ -84,7 +79,7 @@ export function buildAnalysisPrompt(input: string, now: string, knownTags: strin
     `判断优先级，按以下底线取最高档：①距截止≤24h→急（通用）；②工作 / 学习相关任务→至少中，` +
       `其中距截止≤7天（一周内）的工作/学习任务→至少高；③健康相关任务→至少中，其中当天截止（截止日为今天）的健康任务→至少高；` +
       `再结合语义重要度（如"非常重要""关键"等）在底线之上上调；无日期则按语义，但工作/学习/健康类仍至少为中。多条命中取更高档。`,
-    `并按语义推断建议截止日(due_date)与执行日(scheduled_date)，`,
+    `并按语义推断建议截止日(due_date)，`,
     `能推断相对日期就换算成具体 YYYY-MM-DD，无法推断则填 null。`,
     `时间维度（due_time，HH:MM 24小时制）务必处理两类相对说法：`,
     `①明确时刻"下午3点"→15:00；②相对偏移"十分钟后/半小时后/2小时后"——以上面给出的当前时刻为基准换算出绝对时刻，`,

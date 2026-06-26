@@ -28,6 +28,7 @@ fn server_port(state: State<ServerPort>) -> Option<u16> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(ServerPort(Mutex::new(None)))
         .manage(Sidecar(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![server_port])
