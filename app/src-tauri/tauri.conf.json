@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "万事",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "identifier": "com.taskdeck.desktop",
   "build": {
     "frontendDist": "../frontend/dist",
@@ -19,7 +19,8 @@
         "minHeight": 520,
         "resizable": true,
         "fullscreen": false,
-        "titleBarStyle": "Overlay"
+        "titleBarStyle": "Overlay",
+        "acceptFirstMouse": true
       },
       {
         "label": "widget",

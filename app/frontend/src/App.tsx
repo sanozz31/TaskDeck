@@ -13,6 +13,7 @@ import { CompletedModal } from "./components/CompletedModal";
 import { Reminders } from "./components/Reminders";
 import { SettingsModal } from "./components/SettingsModal";
 import { Onboarding } from "./components/Onboarding";
+import { NotificationGuide } from "./components/NotificationGuide";
 import { useSettings } from "./store/useTasks";
 import { clearChat, useChatMessages } from "./store/chatStore";
 import { isWidgetEnabled, showWidget } from "./lib/widgetWindow";
@@ -146,6 +147,7 @@ export default function App() {
       </main>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {completedOpen && <CompletedModal onClose={() => setCompletedOpen(false)} />}
+      <NotificationGuide />
     </div>
   );
 }

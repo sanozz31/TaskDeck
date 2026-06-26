@@ -96,22 +96,21 @@ export function checkReminders(tasks: Task[]): void {
 }
 
 /** 首次进入时申请通知权限：桌面端用 Tauri 插件，浏览器端用 Web Notification。 */
-export async function ensureNotificationPermission(): Promise<void> {
+export async function ensureNotificationPermission(): Promise<boolean> {
   if (isTauri()) {
     try {
       const n = await import("@tauri-apps/plugin-notification");
-      const granted =
-        (await n.isPermissionGranted()) ||
-        (await n.requestPermission()) === "granted";
+      const granted = await n.isPermissionGranted();
       permissionReady = granted;
+      return granted;
     } catch {
       permissionReady = false;
+      return false;
     }
-    return;
   }
   if (typeof Notification === "undefined") {
     permissionReady = false;
-    return;
+    return false;
   }
   if (Notification.permission === "granted") {
     permissionReady = true;
@@ -121,5 +120,33 @@ export async function ensureNotificationPermission(): Promise<void> {
     } catch {
       permissionReady = false;
     }
+  } else {
+    permissionReady = false;
+  }
+  return permissionReady;
+}
+
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (isTauri()) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      permissionReady = await invoke<boolean>("request_notification_permission");
+      return permissionReady;
+    } catch {
+      permissionReady = false;
+      return false;
+    }
+  }
+  return ensureNotificationPermission();
+}
+
+/** 打开系统「设置 → 通知 → 万事」面板（权限被拒后引导用户手动开启）。仅桌面端有效。 */
+export async function openNotificationSettings(): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("open_notification_settings");
+  } catch {
+    /* 命令不可用：静默 */
   }
 }

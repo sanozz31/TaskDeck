@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.2.2"
+version = "1.2.3"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -25,3 +25,8 @@ tauri = { version = "2.11.3", features = ["macos-private-api", "tray-icon", "ima
 tauri-plugin-shell = "2"
 # 本地系统通知：DDL 提醒走原生通道（macOS WKWebView 不支持 Web Notification）
 tauri-plugin-notification = "2"
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6.2"
+objc2 = "0.6.4"
+objc2-foundation = "0.3.2"
+objc2-user-notifications = { version = "0.3.2", features = ["block2", "UNUserNotificationCenter"] }

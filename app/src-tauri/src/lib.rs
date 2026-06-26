@@ -1,4 +1,12 @@
-use std::sync::Mutex;
+use std::sync::{mpsc, Arc, Mutex};
+#[cfg(target_os = "macos")]
+use block2::RcBlock;
+#[cfg(target_os = "macos")]
+use objc2::{class, msg_send, rc::Retained, runtime::Bool};
+#[cfg(target_os = "macos")]
+use objc2_foundation::NSError;
+#[cfg(target_os = "macos")]
+use objc2_user_notifications::{UNAuthorizationOptions, UNUserNotificationCenter};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager, RunEvent, State};
@@ -18,6 +26,70 @@ struct ServerPort(Mutex<Option<u16>>);
 /// 持有 sidecar 子进程句柄，应用退出时 kill，避免残留 node 进程。
 struct Sidecar(Mutex<Option<CommandChild>>);
 
+#[cfg(target_os = "macos")]
+fn is_bundled_app() -> bool {
+    unsafe {
+        let bundle: Retained<objc2::runtime::AnyObject> = msg_send![class!(NSBundle), mainBundle];
+        let path: Retained<objc2::runtime::AnyObject> = msg_send![&*bundle, bundlePath];
+        let cstr: *const std::ffi::c_char = msg_send![&*path, UTF8String];
+        if cstr.is_null() {
+            return false;
+        }
+        std::ffi::CStr::from_ptr(cstr)
+            .to_string_lossy()
+            .ends_with(".app")
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn request_notification_authorization() -> bool {
+    if !is_bundled_app() {
+        return false;
+    }
+
+    let center = UNUserNotificationCenter::currentNotificationCenter();
+    let options = UNAuthorizationOptions::Alert
+        | UNAuthorizationOptions::Sound
+        | UNAuthorizationOptions::Badge;
+    let (tx, rx) = mpsc::channel();
+    let tx = Arc::new(Mutex::new(Some(tx)));
+    let completion = RcBlock::new(move |granted: Bool, _error: *mut NSError| {
+        if let Some(tx) = tx.lock().unwrap().take() {
+            let _ = tx.send(granted.as_bool());
+        }
+    });
+    center.requestAuthorizationWithOptions_completionHandler(options, &completion);
+    // 加超时上限：未签名/缺通知 entitlement 的本地构建上，completion 可能永不回调，
+    // 裸 recv() 会让 spawn_blocking 线程永久阻塞、前端 await 卡死（按钮停在「正在打开…」）。
+    // 60s 远超用户响应系统授权弹窗所需，又能兜住「回调永不来」的死锁。
+    rx.recv_timeout(std::time::Duration::from_secs(60)).unwrap_or(false)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn request_notification_authorization() -> bool {
+    false
+}
+
+#[tauri::command]
+async fn request_notification_permission() -> bool {
+    tauri::async_runtime::spawn_blocking(request_notification_authorization)
+        .await
+        .unwrap_or(false)
+}
+
+/// 打开系统「设置 → 通知 → 万事」面板，引导用户手动开启通知。
+/// 设计上不再读取/监测授权状态（该读取在未签名本地构建下不可靠），统一「点击前往开启」。
+#[tauri::command]
+fn open_notification_settings() {
+    #[cfg(target_os = "macos")]
+    {
+        // 深链到本 App 的通知设置页（id 为 bundle identifier）
+        let _ = std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.notifications?id=com.taskdeck.desktop")
+            .spawn();
+    }
+}
+
 /// 前端启动时 invoke 此命令拿到后端实际端口（未就绪则为 None，前端会重试 /health）。
 #[tauri::command]
 fn server_port(state: State<ServerPort>) -> Option<u16> {
@@ -31,7 +103,11 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .manage(ServerPort(Mutex::new(None)))
         .manage(Sidecar(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![server_port])
+        .invoke_handler(tauri::generate_handler![
+            server_port,
+            request_notification_permission,
+            open_notification_settings
+        ])
         .on_window_event(|window, event| {
             if window.label() == "main" {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {

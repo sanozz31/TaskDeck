@@ -1940,6 +1940,11 @@
   font-size: 14px;
   line-height: 1.6;
 }
+.confirm-msg--muted {
+  color: var(--ink-tertiary, var(--ink-secondary));
+  font-size: 13px;
+  margin-top: var(--sp-2);
+}
 
 /* 设置表单 */
 .set-group {

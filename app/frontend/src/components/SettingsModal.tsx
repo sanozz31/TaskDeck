@@ -5,6 +5,7 @@ import { CLAUDE_PAUSED } from "../lib/env";
 import { isWidgetEnabled, showWidget, hideWidget } from "../lib/widgetWindow";
 import { ConfirmModal } from "./ConfirmModal";
 import { api } from "../api/client";
+import { requestNotificationPermission, openNotificationSettings } from "../lib/reminders";
 
 /** DeepSeek 当前生产模型（V4 系列，1M 上下文，OpenAI 兼容）。
  *  旧别名 deepseek-chat / deepseek-reasoner 官方将于 2026/07/24 停用，故不再列出。 */
@@ -42,6 +43,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     const next = !widgetOn;
     setWidgetOn(next);
     void (next ? showWidget() : hideWidget());
+  };
+
+  // 通知提醒:不再监测「是否已授权」(该读取在未签名本地构建下不可靠,插件与底层结果互相矛盾且不随系统实时变化),
+  // 改为一个纯按钮「开启通知」——点击即引导用户前往开启:首次未决会弹系统授权窗,之后(已决定过/弹不出来)兜底打开系统通知设置页。
+  const enableNotifications = async () => {
+    const granted = await requestNotificationPermission(); // 首次未决:弹"允许/不允许"系统窗
+    if (!granted) await openNotificationSettings(); // 已拒/已授权/弹窗不可用:前往系统设置手动开
   };
 
   // 清除所有本地数据
@@ -168,6 +176,24 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 onClick={toggleWidget}
               >
                 <span className="switch-knob" />
+              </button>
+            </div>
+          </div>
+
+          {/* 通知提醒 */}
+          <div className="set-group">
+            <div className="set-row">
+              <div>
+                <div className="set-label">通知提醒</div>
+                <div className="set-hint">点击前往开启通知提醒</div>
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ padding: "8px 16px", fontSize: 13, flexShrink: 0 }}
+                onClick={() => void enableNotifications()}
+              >
+                开启通知
               </button>
             </div>
           </div>
