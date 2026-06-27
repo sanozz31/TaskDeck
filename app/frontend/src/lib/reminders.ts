@@ -10,6 +10,7 @@ import type { Task } from "../types";
  * 浏览器端降级到 Web Notification。已提醒过的「任务:阶段」记到 localStorage 去重。
  */
 const NOTIFIED_KEY = "taskdeck.notified.v2"; // v2：升级为 taskId:stage 去重
+const DUE_SNAPSHOT_KEY = "taskdeck.due_snapshot.v1"; // taskId → dueAtMs 快照，检测 deadline 变更后清旧 stage
 const H = 60 * 60 * 1000;
 /** 提醒阶段，按截止前时长从长到短排列。 */
 const STAGES = [
@@ -41,6 +42,22 @@ function saveNotified(s: Set<string>) {
   }
 }
 
+function loadDueSnapshot(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(DUE_SNAPSHOT_KEY) || "{}") as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function saveDueSnapshot(s: Record<string, number>) {
+  try {
+    localStorage.setItem(DUE_SNAPSHOT_KEY, JSON.stringify(s));
+  } catch {
+    /* localStorage 不可用时忽略 */
+  }
+}
+
 /** 发一条系统通知：桌面端走 Tauri 原生插件，浏览器端走 Web Notification。 */
 function fire(title: string, body: string, tag: string): void {
   if (isTauri()) {
@@ -64,11 +81,25 @@ export function checkReminders(tasks: Task[]): void {
   const now = Date.now();
   const notified = loadNotified();
   const liveIds = new Set(tasks.map((t) => t.id));
+  const dueSnapshot = loadDueSnapshot();
+
+  // 构建新的快照：仅含有效截止时刻的任务
+  const newSnapshot: Record<string, number> = {};
 
   for (const task of tasks) {
     if (task.status === "done" || task.status === "archived") continue;
     const dueAt = dueAtMs(task); // 复用 deadline.ts 的统一「截止时刻」口径（无 due_time→当天 23:59）
     if (!Number.isFinite(dueAt)) continue; // 无 due_date：dueAtMs 返回 Infinity
+
+    // 记录当前快照（无论是否过期，供下次对比）
+    newSnapshot[task.id] = dueAt;
+
+    // deadline 变更检测：若 dueAtMs 与上次快照不同，说明任务时间被修改过，
+    // 清除该任务所有旧 stage key，让新 deadline 重新触发提醒。
+    if (dueSnapshot[task.id] !== undefined && dueSnapshot[task.id] !== dueAt) {
+      for (const st of STAGES) notified.delete(`${task.id}:${st.key}`);
+    }
+
     if (now > dueAt + GRACE_MS) continue; // 过期太久不再补提醒
 
     const due = `${prettyDate(task.due_date)}${task.due_time ? " " + task.due_time : ""}`;
@@ -88,11 +119,16 @@ export function checkReminders(tasks: Task[]): void {
     }
   }
 
-  // 清掉已不存在任务的记录，避免无限增长
+  // 清掉已不存在任务的记录（包括 notified stage 和 due snapshot），避免无限增长
   for (const mark of notified) {
     if (!liveIds.has(mark.split(":")[0])) notified.delete(mark);
   }
+  for (const tid of Object.keys(dueSnapshot)) {
+    if (!liveIds.has(tid)) delete newSnapshot[tid]; // 已删除的任务：不写回快照
+  }
+
   saveNotified(notified);
+  saveDueSnapshot(newSnapshot);
 }
 
 /** 首次进入时申请通知权限：桌面端用 Tauri 插件，浏览器端用 Web Notification。 */
